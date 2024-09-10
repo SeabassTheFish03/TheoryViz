@@ -1,4 +1,4 @@
-from fa_manager import DFA_Manager, NFA_Manager, TM_Manager
+from fa_manager import DFA_Manager, NFA_Manager, PDA_Manager, TM_Manager
 import json
 import sys
 

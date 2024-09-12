@@ -101,7 +101,7 @@ class FiniteAutomaton(DiGraph):
 
         vertex_config: dict = dict()
         for key, value in config.enumerate():
-            # If it's in there, translate, else leave it
+            # If it's in there, translate, else let it pass
             key = toml_to_mobject.get(key, key)
 
             if key in mobject_keys:
@@ -122,7 +122,7 @@ class FiniteAutomaton(DiGraph):
         )
 
         if override_labels is not None:
-            self._labels = override_labels
+            self._labels = {**override_labels, **self._labels}
         else:
             self._labels = {v: MathTex(
                 v, fill_color=config["vertex_text_color"]) for v in vertices

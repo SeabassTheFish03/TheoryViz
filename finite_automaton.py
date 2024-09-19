@@ -11,16 +11,26 @@ import numpy as np
 
 # Manim
 from manim.mobject.graph import DiGraph
-from manim.mobject.geometry.arc import CurvedArrow, Dot, Annulus, LabeledDot
+from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
-from manim.mobject.text.tex_mobject import MathTex
-from manim.mobject.types.vectorized_mobject import VGroup, VDict
+from manim.mobject.text.tex_mobject import MathTex, Tex
+from manim.mobject.types.vectorized_mobject import VGroup
+
 from manim.animation.indication import Indicate
 
-# TheoryViz Internal
-from utils import angle_between
+from manim.scene.scene import Scene
+
+
+def unit_vector(vector):
+    return vector / np.linalg.norm(vector)
+
+
+def angle_between(v1, v2):
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
 
 class FiniteAutomaton(DiGraph):
@@ -48,20 +58,23 @@ class FiniteAutomaton(DiGraph):
         A list of vertices. Must be hashable elements.
 
     edges
-        A list of edges, specified as tuples ``(u, v)`` where both ``u``
+        A list of edges, specified as tuples ``(u, v, label)`` where both ``u``
         and ``v`` are vertices.
 
         Now supported: Self-looping edges (written ``(u, u)``) and multi-edges
         (where both ``(u, v)`` and ``(v, u)`` are present and shown)
-    config
-        A dict containing all the configuration keys/values. Every key must be
+    visual_config
+        A dict containing all the visual configuration keys/values. Every key must be
         accounted for, but the existing config.toml file is always up to date
         and contains all the keys.
-    flags
-        The flags dictionary has keys corresponding to specific vertices. Not
-        all vertices need be included. To pass multiple flags, put them together
-        in a string. For example, a final state that is also the current state
-        would have a flag string of "fc".
+    options
+        Not to be confused with visual_config, this dict modifies the content of
+        the original DiGraph and affects *what* is displayed, not *how* it's displayed.
+
+        In this dict, you can specify vertex labels via `{"vlabels": {<internal_name>: <display_name>}}`,
+        edge labels via `{"elabels": {(<u>, <v>): <display_label>}}`, and the flags associated with each
+        vertex via `{"flags": {<vertex>: [<flags>]}}`
+
         Supported flags:
             'f': The vertex is a [f]inal state
             'c': The vertex is the [c]urrent state (one allowed)
@@ -112,51 +125,51 @@ class FiniteAutomaton(DiGraph):
         self,
         vertices: list[str],
         edges: list[tuple[str, str]],
-        config: dict,
-        flags: dict = dict(),
-        override_labels=None
-    ):
+        visual_config: dict = dict(),
+        options: dict = dict()
+    ) -> None:
         super().__init__(
             vertices,
-            edges
+            edges,
+            edge_type=LabeledLine
         )
 
-        if override_labels is not None:
-            self._labels = {**override_labels, **self._labels}
-        else:
-            self._labels = {v: MathTex(
-                v, fill_color=config["vertex_text_color"]) for v in vertices
-            }
+        self._labels: dict[str, MathTex] = {
+            "vertices": {
+                v: MathTex(
+                    v,
+                    fill_color=visual_config["vertex_text_color"]
+                ) for v in vertices
+            },
+            "edges": dict(),
+        }
+        if options["labels"] is not None:
+            self._labels = {**options["labels"], **self._labels}
 
-        vertex_mobjects = dict()
-
-        for v, label in self._labels.items():
+        for v, label in self._labels["vertices"].items():
             self._vertex_config[v]["label"] = label
 
-        vertex_mobjects = {v: LabeledDot(
-            **self._vertex_config[v]) for v in vertices}
+        self.vertices: dict[str, LabeledDot] = {v: LabeledDot(**self._vertex_config[v]) for v in vertices}
 
-        vertex_mobjects = {v: {
-            "mobject":
-                VDict({
-                    "base": deepcopy(vertex),
-                    "accessories": VGroup()
-                }),
-            "flags": flags.get(v, list())
-        } for v, vertex in vertex_mobjects.items()}
+        self.accessories: dict[str, VGroup] = {
+            k: VGroup().move_to(self.vertices[k].get_center()) for k in self.vertices.keys()
+        }
 
-        self.layout_scale = config["layout_scale"]
+        self.layout_scale: float = visual_config["layout_scale"]
+        self.visual_config: dict = visual_config
+        self.options: dict = options
 
         self._redraw_vertices()
 
-    def vcenter(self):
+    def vcenter(self) -> np.ndarray:
         """
         Gets the average position of each vertex in the graph
         """
         centers = [vertex["base"].get_center() for vertex in self.vertices.values()]
         return np.average(np.array(centers), axis=0)
 
-    def _populate_edge_dict(self, edges, edge_type):
+    # TODO: Update to new framework
+    def _populate_edge_dict(self, edges, edge_type) -> None:
         if (e_type := edge_type.__name__) != "LabeledLine":
             err_msg = "Unsupported edge type: " + e_type + ". Use LabeledLine"
             raise TypeError(err_msg)
@@ -187,8 +200,7 @@ class FiniteAutomaton(DiGraph):
             else:
                 edge_label = tmp_edge_conf[(u, u)].pop("label", "g")
 
-                between = angle_between(self[u].get_center(
-                ) - self.vcenter(), np.array([1, 0, 0]))
+                between = angle_between(self[u].get_center() - self.vcenter(), np.array([1, 0, 0]))
                 if self[u].get_center()[1] < self.vcenter()[1]:
                     between *= -1
 
@@ -241,15 +253,15 @@ class FiniteAutomaton(DiGraph):
                 print(self._tip_config)
                 exit()
 
-    def update_edges(self, graph):
+    # TODO: Update to new framework
+    def update_edges(self, graph: DiGraph) -> None:
         tmp_edge_conf = deepcopy(self._edge_config)
 
         for (u, v), edge in graph.edges.items():
             if u != v:
                 # Handling arrows going both ways
                 if (v, u) in self.edges:
-                    vec1 = self.vertices[v]["base"].get_center() -\
-                        self.vertices[u]["base"].get_center()
+                    vec1 = self.vertices[v]["base"].get_center() - self.vertices[u]["base"].get_center()
                     vec2 = np.cross(vec1, np.array([0, 0, 1]))
 
                     length = np.linalg.norm(vec2)
@@ -323,62 +335,55 @@ class FiniteAutomaton(DiGraph):
                     about_point=self.vertices[u]["base"].get_center()
                 )
 
-    def _redraw_vertices(self):
-        for v in self.vertices:
-            if "f" in self.flags[v]:
-                ring = Annulus(
-                    inner_radius=self.vertices[v]["base"].width + 0.1 * self.layout_scale / 2,
-                    outer_radius=self.vertices[v]["base"].width + 0.2 * self.layout_scale / 2,
-                    z_index=-1,
-                    fill_color="white"
-                ).move_to(
-                    self.vertices[v]["base"].get_center()
-                ).scale(1 / self.layout_scale)
+    def _redraw_vertices(self) -> None:
+        for vertex in self.options["flags"]:
+            if vertex in self.vertices:
+                focused_flags: list[str] = self.vertices[vertex]
+                if "i" in focused_flags:
+                    ray = vertex.get_center() - self.vcenter()
+                    start_arrow: Arrow = Arrow(
+                        start=ray * 2,
+                        end=ray * 1.05,
+                        fill_color="white",
+                        stroke_width=20
+                    )
+                    self.accessories.add(start_arrow)
 
-                self.vertices[v]["accessories"].add(ring)
+                if "c" in focused_flags:
+                    vertex.set_color(self.visual_config["current_state_color"])
+                else:
+                    vertex.set_color(self.visual_config["vertex_color"])
 
-            if "i" in self.flags[v]:
-                ray = self.vertices[v]["base"].get_center() - \
-                    self.vcenter()
-                start_arrow = Arrow(
-                    start=ray * 2,
-                    end=ray * 1.05,
-                    fill_color="white",
-                    stroke_width=20
-                )
-                self.vertices[v]["accessories"].add(start_arrow)
+                if "f" in focused_flags:
+                    ring = Annulus(
+                        inner_radius=vertex["base"].width + 0.1 * self.layout_scale / 2,
+                        outer_radius=vertex["base"].width + 0.2 * self.layout_scale / 2,
+                        z_index=-1,
+                        fill_color="white"
+                    ).move_to(
+                        vertex["base"].get_center()
+                    ).scale(1 / self.layout_scale)
 
-            if "c" in self.flags[v]:
-                for item in self.vertices[v]["base"]:
-                    if isinstance(item, Dot):
-                        item.set_color("yellow")
-                    else:
-                        item.set_color("black")
-            else:
-                for item in self.vertices[v]["base"]:
-                    if isinstance(item, Dot):
-                        item.set_color("white")
-                    else:
-                        item.set_color("black")
+                    self.accessories.add(ring)
 
-    def add_flag(self, state, flag):
+    def add_flag(self, state: str, flag: str) -> None:
         if state in self.vertices:
-            self.flags[state].append(flag)
+            self.options["flags"][state].append(flag)
         self._redraw_vertices()
 
-    def remove_flag(self, state, flag):
+    def remove_flag(self, state: str, flag: str) -> None:
         if state in self.vertices:
             if flag in self.flags[state]:
                 self.flags[state].remove(flag)
         self._redraw_vertices()
 
-    def _arrow_from(self, edge):
+    def _arrow_from(self, edge: LabeledLine | CurvedArrow) -> None:
         return Arrow(
             z_index=-2,
             stroke_width=15
         ).put_start_and_end_on(*edge.get_start_and_end())
 
-    def transition_animation(self, start, end):
+    def transition_animation(self, start: LabeledDot, end: LabeledDot) -> Indicate:
         if (start, end) not in self.edges:
             raise Exception(f"Transition does not exist: {(start, end)}")
 
@@ -387,6 +392,16 @@ class FiniteAutomaton(DiGraph):
         else:
             return Indicate(self._arrow_from(self.edges[(start, end)]))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Directed Graph with labeled edges with\
             {len(self.vertices)} vertices and {len(self.edges)} edges"
+
+
+class TestScene(Scene):
+    def construct(self):
+        with open("config.toml", "rb") as f:
+            config = tomllib.load(f)
+        with open("sample_fas/sample_dfa.json", "r") as f:
+            test_dfa = json.load(f)
+        test_automaton = FiniteAutomaton(test_dfa["states"], test_dfa["transitions"], visual_config=config, options={"labels": dict(), "flags": dict()})
+        self.add(test_automaton)

@@ -146,7 +146,10 @@ class FiniteAutomaton(DiGraph):
         }
         overrides = {v: options["vertices"][v]["label"] for v in vertices if v in options["vertices"] and "label" in options["vertices"][v]}
         if len(overrides) > 0:
-            print("Overriding vertices ", overrides)
+            for vert, label in overrides.items():
+                self._labels["vertices"][vert]["label"] = label
+
+        self._vertex_config = self._vertex_config_from_bigconfig(visual_config)
 
         for v, label in self._labels["vertices"].items():
             self._vertex_config[v]["label"] = label

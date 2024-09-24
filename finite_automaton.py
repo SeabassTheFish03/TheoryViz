@@ -4,7 +4,6 @@ __all__ = {
 
 # Standard Lib
 from copy import deepcopy
-import tomllib
 
 # Dependencies
 import numpy as np
@@ -15,12 +14,10 @@ from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
-from manim.mobject.text.tex_mobject import MathTex, Tex
+from manim.mobject.text.tex_mobject import MathTex
 from manim.mobject.types.vectorized_mobject import VGroup
 
 from manim.animation.indication import Indicate
-
-from manim.scene.scene import Scene
 
 
 def unit_vector(vector):
@@ -66,14 +63,15 @@ class FiniteAutomaton(DiGraph):
     visual_config
         A dict containing all the visual configuration keys/values. Every key must be
         accounted for, but the existing config.toml file is always up to date
-        and contains all the keys.
+        and contains all the keys. It's not strictly necessary to load from the toml file,
+        but that is the surest way to ensure all the keys are present.
     options
         Not to be confused with visual_config, this dict modifies the content of
         the original DiGraph and affects *what* is displayed, not *how* it's displayed.
 
-        In this dict, you can specify vertex labels via `{"vlabels": {<internal_name>: <display_name>}}`,
-        edge labels via `{"elabels": {(<u>, <v>): <display_label>}}`, and the flags associated with each
-        vertex via `{"flags": {<vertex>: [<flags>]}}`
+        In this dict, you can specify vertex labels via `{"vertices": {<vertex>: {"label": <display_name>}}}`,
+        edge labels via `{"edges": {(<u>, <v>): {"label": <display_label>}}}`, and the flags associated with each
+        vertex via `{"vertices": {<vertex>: {"flags": [flags]}}}`. If left unspeciried, the vertices will be labeled with their state names, and the edges will be labeled with their transition symbols. By default, a vertex has no flags.
 
         Supported flags:
             'f': The vertex is a [f]inal state
@@ -86,11 +84,13 @@ class FiniteAutomaton(DiGraph):
         toml_to_mobject: dict[str, str] = {
             "vertex_color": "color",
             "vertex_text_color": "label_fill_color",
-            "vertex_stroke_color": "stroke_color"
+            "vertex_stroke_color": "stroke_color",
+            "vertex_radius": "radius"
         }
         # These are the kwargs that Manim understands and affect the appearance of the vertex
         mobject_keys: list[str] = [
             # From LabeledDot
+            "label_fill_color",
             "label",
             "radius",
             # From Dot
@@ -131,20 +131,22 @@ class FiniteAutomaton(DiGraph):
         super().__init__(
             vertices,
             edges,
-            edge_type=LabeledLine
+            edge_type=LabeledLine,
         )
 
         self._labels: dict[str, MathTex] = {
             "vertices": {
                 v: MathTex(
                     v,
-                    fill_color=visual_config["vertex_text_color"]
+                    fill_color=visual_config["vertex_text_color"],
+                    font_size=12
                 ) for v in vertices
             },
             "edges": dict(),
         }
-        if options["labels"] is not None:
-            self._labels = {**options["labels"], **self._labels}
+        overrides = {v: options["vertices"][v]["label"] for v in vertices if v in options["vertices"] and "label" in options["vertices"][v]}
+        if len(overrides) > 0:
+            print("Overriding vertices ", overrides)
 
         for v, label in self._labels["vertices"].items():
             self._vertex_config[v]["label"] = label
@@ -165,7 +167,7 @@ class FiniteAutomaton(DiGraph):
         """
         Gets the average position of each vertex in the graph
         """
-        centers = [vertex["base"].get_center() for vertex in self.vertices.values()]
+        centers = [vertex.get_center() for vertex in self.vertices.values()]
         return np.average(np.array(centers), axis=0)
 
     # TODO: Update to new framework
@@ -336,9 +338,9 @@ class FiniteAutomaton(DiGraph):
                 )
 
     def _redraw_vertices(self) -> None:
-        for vertex in self.options["flags"]:
-            if vertex in self.vertices:
-                focused_flags: list[str] = self.vertices[vertex]
+        for vertex, opts in self.options["vertices"].items():
+            if "flags" in opts and len(opts["flags"]) > 0:
+                focused_flags: list[str] = opts["flags"]
                 if "i" in focused_flags:
                     ray = vertex.get_center() - self.vcenter()
                     start_arrow: Arrow = Arrow(
@@ -395,13 +397,3 @@ class FiniteAutomaton(DiGraph):
     def __repr__(self) -> str:
         return f"Directed Graph with labeled edges with\
             {len(self.vertices)} vertices and {len(self.edges)} edges"
-
-
-class TestScene(Scene):
-    def construct(self):
-        with open("config.toml", "rb") as f:
-            config = tomllib.load(f)
-        with open("sample_fas/sample_dfa.json", "r") as f:
-            test_dfa = json.load(f)
-        test_automaton = FiniteAutomaton(test_dfa["states"], test_dfa["transitions"], visual_config=config, options={"labels": dict(), "flags": dict()})
-        self.add(test_automaton)

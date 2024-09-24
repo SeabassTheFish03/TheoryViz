@@ -16,7 +16,7 @@ initial_state_color = "white"
 transition_color = "yellow"
 
 # Geometry Config
-vertex_radius = 0.08
+vertex_radius = 2
 layout_scale = 2
 layout_type = "kamada_kawai"
 

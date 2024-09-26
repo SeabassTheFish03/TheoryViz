@@ -1,1 +1,1 @@
-LOAD whatthesigma.json as wts
+LOAD hereWeGo.json as hwg

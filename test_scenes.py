@@ -1,6 +1,7 @@
 # Standard Lib
 import tomllib
 import json
+from manim._config import tempconfig
 
 # Manim
 from manim.scene.scene import Scene
@@ -17,3 +18,8 @@ class TestScene(Scene):
             test_dfa = json.load(f)
         test_automaton = DFA_Manager.from_json(test_dfa, config=config).mobj
         self.add(test_automaton)
+
+if __name__ == "__main__":
+    with tempconfig({"quality": "low_quality", "preview": True}):
+        scene = TestScene()
+        scene.render()

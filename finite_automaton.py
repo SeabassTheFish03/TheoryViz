@@ -113,12 +113,12 @@ class FiniteAutomaton(DiGraph):
         ]
 
         vertex_config: dict = dict()
-        for key, value in config.enumerate():
+        for key, value in config.items():
             # If it's in there, translate, else let it pass
             key = toml_to_mobject.get(key, key)
 
             if key in mobject_keys:
-                vertex_config.update(key, value)
+                vertex_config[str(key)] = value
         return vertex_config
 
     def __init__(
@@ -147,12 +147,17 @@ class FiniteAutomaton(DiGraph):
         overrides = {v: options["vertices"][v]["label"] for v in vertices if v in options["vertices"] and "label" in options["vertices"][v]}
         if len(overrides) > 0:
             for vert, label in overrides.items():
-                self._labels["vertices"][vert]["label"] = label
+                self._labels["vertices"][vert] = MathTex(
+                    label,
+                    fill_color=visual_config["vertex_text_color"],
+                    font_size=12
+                )
 
         self._vertex_config = self._vertex_config_from_bigconfig(visual_config)
 
+        print(self._vertex_config)
         for v, label in self._labels["vertices"].items():
-            self._vertex_config[v]["label"] = label
+            self._vertex_config[v] = {"label": label}
 
         self.vertices: dict[str, LabeledDot] = {v: LabeledDot(**self._vertex_config[v]) for v in vertices}
 

@@ -91,7 +91,6 @@ class FiniteAutomaton(DiGraph):
         mobject_keys: list[str] = [
             # From LabeledDot
             "label_fill_color",
-            "label",
             "radius",
             # From Dot
             "point",
@@ -121,55 +120,138 @@ class FiniteAutomaton(DiGraph):
                 vertex_config[str(key)] = value
         return vertex_config
 
+    def _edge_config_from_bigconfig(self, config: dict) -> dict:
+        toml_to_mobject: dict[str, str] = {
+            "edge_color": "color",
+            "edge_text_color": "label_color",
+            "edge_label_position": "label_position",
+            "edge_label_frame": "label_frame",
+            "edge_label_frame_fill": "frame_fill_color",
+            "edge_label_frame_opacity": "frame_fill_opacity",
+        }
+
+        # These are the kwargs that Manim understands and affect the appearance of the edge
+        mobject_keys: list[str] = [
+            # From LabeledLine
+            "label_color",
+            "font_size",
+            "label_position",
+            "label_frame",
+            "frame_fill_color",
+            "frame_fill_opacity",
+            # From Line
+            # From TipableVMobject
+            # From VMobject
+            "fill_color",
+            "stroke_color",
+            "stroke_opacity",
+            "background_stroke_color",
+            "background_stroke_opacity",
+            "background_stroke_width",
+            "sheen_factor",
+            "sheen_direction",
+        ]
+
+        edge_config: dict = dict()
+        for key, value in config.items():
+            # If it's in there, translate, else let it pass
+            key = toml_to_mobject.get(key, key)
+
+            if key in mobject_keys:
+                edge_config[str(key)] = value
+        return edge_config
+
+    def _graph_config_from_bigconfig(self, config):
+        toml_to_mobject: dict[str, str] = {
+            "layout_type": "layout",
+            "vertex_text_color": "label_fill_color",
+        }
+
+        # These are the kwargs that Manim understands and affect the appearance of the edge
+        mobject_keys: list[str] = [
+            # From GenericGraph
+            "label_fill_color",
+            "layout",
+            "layout_scale",
+            # From VMobject
+            "fill_color",
+            "stroke_color",
+            "stroke_opacity",
+            "background_stroke_color",
+            "background_stroke_opacity",
+            "background_stroke_width",
+            "sheen_factor",
+            "sheen_direction",
+        ]
+
+        graph_config: dict = dict()
+        for key, value in config.items():
+            # If it's in there, translate, else let it pass
+            key = toml_to_mobject.get(key, key)
+
+            if key in mobject_keys:
+                graph_config[str(key)] = value
+        return graph_config
+
     def __init__(
         self,
         vertices: list[str],
         edges: list[tuple[str, str]],
-        visual_config: dict = dict(),
+        visual_config: dict,  # Expected to come straight from config.toml. Handles rest internally
         options: dict = dict()
     ) -> None:
+
+        # Setting up the vertex config
+        _vertex_config: dict = self._vertex_config_from_bigconfig(visual_config)
+        _vertex_labels: dict = dict()
+
+        # At this time, options only supports labels. I've built this so the options
+        #   could be easily handled should more functionality be added.
+        if "vertices" in options:
+            for vertex, opts in options["vertices"].items():
+                _vertex_config[vertex] = opts
+                if "label" in opts:
+                    del _vertex_config[vertex]["label"]
+                    _vertex_labels[vertex] = opts["label"]
+                else:
+                    _vertex_labels[vertex] = str(vertex)
+
+        # Setting up the edge config
+        _edge_config: dict = self._edge_config_from_bigconfig(visual_config)
+        _edge_labels: dict = dict()
+
+        if "edges" in options:
+            for (start, end), opts in options["edges"].items():
+                _edge_config[(start, end)] = opts
+                if "label" in opts:
+                    del _edge_config[(start, end)]["label"]
+                    _edge_labels[(start, end)] = opts["label"]
+                else:
+                    _edge_labels[(start, end)] = str((start, end))
+
+        _graph_config = self._graph_config_from_bigconfig(visual_config)
+
+        # We let DiGraph (really, GenericGraph) do most of the heavy lifting.
+        # When it accepts configs, it takes global options (i.e. options that apply to every vertex/edge)
+        #   and override options keyed to a specific vertex/edge name (which override the global ones).
+        # That's what the above was for, trimming out any specific things and making sure the input is sanitary.
         super().__init__(
             vertices,
             edges,
-            edge_type=LabeledLine,
+            vertex_type=LabeledDot,
+            labels=_vertex_labels,  # This refers specifically to vertex labels
+            vertex_config=_vertex_config,
+            edge_config=_edge_config,
+            **_graph_config
         )
+        # TODO: Explore if labels can be passed to edge constructor directly
 
-        self._labels: dict[str, MathTex] = {
-            "vertices": {
-                v: MathTex(
-                    v,
-                    fill_color=visual_config["vertex_text_color"],
-                    font_size=12
-                ) for v in vertices
-            },
-            "edges": dict(),
-        }
-        overrides = {v: options["vertices"][v]["label"] for v in vertices if v in options["vertices"] and "label" in options["vertices"][v]}
-        if len(overrides) > 0:
-            for vert, label in overrides.items():
-                self._labels["vertices"][vert] = MathTex(
-                    label,
-                    fill_color=visual_config["vertex_text_color"],
-                    font_size=12
-                )
-
-        self._vertex_config = self._vertex_config_from_bigconfig(visual_config)
-
-        print(self._vertex_config)
-        for v, label in self._labels["vertices"].items():
-            self._vertex_config[v] = {"label": label}
-
-        self.vertices: dict[str, LabeledDot] = {v: LabeledDot(**self._vertex_config[v]) for v in vertices}
-
+        # Once the super init is complete, we need to add two things:
+        # First, we need to add a place for the accessories (annuli, arrows, etc,) to go
+        # Second, we need to replace all the edges with the labeled ones
         self.accessories: dict[str, VGroup] = {
-            k: VGroup().move_to(self.vertices[k].get_center()) for k in self.vertices.keys()
+            k: VGroup().move_to(v.get_center()) for k, v in self.vertices.items()
         }
-
-        self.layout_scale: float = visual_config["layout_scale"]
-        self.visual_config: dict = visual_config
-        self.options: dict = options
-
-        self._redraw_vertices()
 
     def vcenter(self) -> np.ndarray:
         """

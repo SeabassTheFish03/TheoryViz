@@ -16,6 +16,7 @@ class TestScene(Scene):
             config = tomllib.load(f)
         with open("fa_vault/sample_dfa.json", "rb") as f:
             test_dfa = json.load(f)
+
         test_automaton = DFA_Manager.from_json(test_dfa, config=config).mobj
         self.add(test_automaton)
 

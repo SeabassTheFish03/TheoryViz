@@ -133,6 +133,7 @@ class FiniteAutomaton(DiGraph):
         # These are the kwargs that Manim understands and affect the appearance of the edge
         mobject_keys: list[str] = [
             # From LabeledLine
+            "color",
             "label_color",
             "font_size",
             "label_position",
@@ -161,7 +162,7 @@ class FiniteAutomaton(DiGraph):
                 edge_config[str(key)] = value
         return edge_config
 
-    def _graph_config_from_bigconfig(self, config):
+    def _graph_config_from_bigconfig(self, config: dict) -> dict:
         toml_to_mobject: dict[str, str] = {
             "layout_type": "layout",
             "vertex_text_color": "label_fill_color",
@@ -204,15 +205,17 @@ class FiniteAutomaton(DiGraph):
         # Setting up the vertex config
         _vertex_config: dict = self._vertex_config_from_bigconfig(visual_config)
         _vertex_labels: dict = dict()
+        _flags: dict = dict()
 
-        # At this time, options only supports labels. I've built this so the options
-        #   could be easily handled should more functionality be added.
+        # Must handle labels and flags
         if "vertices" in options:
             for vertex, opts in options["vertices"].items():
-                _vertex_config[vertex] = opts
+                _vertex_config[vertex] = deepcopy(opts)
                 if "label" in opts:
                     del _vertex_config[vertex]["label"]
                     _vertex_labels[vertex] = opts["label"]
+                if "flags" in opts:
+                    _flags[vertex] = _vertex_config[vertex].pop("flags")
                 else:
                     _vertex_labels[vertex] = str(vertex)
 
@@ -222,7 +225,7 @@ class FiniteAutomaton(DiGraph):
 
         if "edges" in options:
             for (start, end), opts in options["edges"].items():
-                _edge_config[(start, end)] = opts
+                _edge_config[(start, end)] = deepcopy(opts)
                 if "label" in opts:
                     del _edge_config[(start, end)]["label"]
                     _edge_labels[(start, end)] = opts["label"]
@@ -239,16 +242,19 @@ class FiniteAutomaton(DiGraph):
             vertices,
             edges,
             vertex_type=LabeledDot,
+            edge_type=LabeledLine,
             labels=_vertex_labels,  # This refers specifically to vertex labels
             vertex_config=_vertex_config,
             edge_config=_edge_config,
             **_graph_config
         )
-        # TODO: Explore if labels can be passed to edge constructor directly
+        # Give the edges a little refresh since DiGraph isn't built
+        #  for edge labels
+        self.remove(*self.edges.values())
+        self._repopulate_edge_dict(edges, _edge_config, _edge_labels)
+        self.add(*self.edges.values())
 
-        # Once the super init is complete, we need to add two things:
-        # First, we need to add a place for the accessories (annuli, arrows, etc,) to go
-        # Second, we need to replace all the edges with the labeled ones
+        # We add accessories using flags, and they live on top of the vertices
         self.accessories: dict[str, VGroup] = {
             k: VGroup().move_to(v.get_center()) for k, v in self.vertices.items()
         }
@@ -257,16 +263,18 @@ class FiniteAutomaton(DiGraph):
         """
         Gets the average position of each vertex in the graph
         """
-        centers = [vertex.get_center() for vertex in self.vertices.values()]
+        centers: list = [vertex.get_center() for vertex in self.vertices.values()]
         return np.average(np.array(centers), axis=0)
 
-    # TODO: Update to new framework
-    def _populate_edge_dict(self, edges, edge_type) -> None:
-        if (e_type := edge_type.__name__) != "LabeledLine":
-            err_msg = "Unsupported edge type: " + e_type + ". Use LabeledLine"
-            raise TypeError(err_msg)
-
-        tmp_edge_conf = deepcopy(self._edge_config)
+    # We're beholden to this function call in super().__init__()
+    # This works just enough to avoid errors, then gets fixed by
+    # _repopulate_edge_dict() below
+    def _populate_edge_dict(
+        self,
+        edges: dict[(str, str), LabeledLine],
+        labels: dict[(str, str), str]
+    ) -> None:
+        tmp_edge_conf: dict = deepcopy(self._edge_config)
 
         self.edges = dict()
         for (u, v) in edges:
@@ -280,10 +288,10 @@ class FiniteAutomaton(DiGraph):
                 else:
                     offset = np.array([0, 0, 0])
 
-                edge_label = tmp_edge_conf[(u, v)].pop("label", "f")
+                edge_label = tmp_edge_conf[(u, v)].pop("label", "why??")
                 if edge_label == "":
                     edge_label = "\\epsilon"
-                self.edges[(u, v)] = edge_type(
+                self.edges[(u, v)] = LabeledLine(
                     label=edge_label,
                     start=self[u],
                     end=self[v],
@@ -345,74 +353,78 @@ class FiniteAutomaton(DiGraph):
                 print(self._tip_config)
                 exit()
 
-    # TODO: Update to new framework
-    def update_edges(self, graph: DiGraph) -> None:
-        tmp_edge_conf = deepcopy(self._edge_config)
+    def _repopulate_edge_dict(
+        self,
+        edges: dict[(str, str), LabeledLine],
+        edge_config: dict,
+        labels: dict[(str, str), str]
+    ) -> None:
+        self.edges = dict()
+        general_edge_config = {k: v for k, v in edge_config.items() if isinstance(k, str)}
+        specific_edge_config = {k: v for k, v in edge_config.items() if isinstance(k, tuple)}
 
-        for (u, v), edge in graph.edges.items():
+        for (u, v) in edges:
             if u != v:
-                # Handling arrows going both ways
-                if (v, u) in self.edges:
-                    vec1 = self.vertices[v]["base"].get_center() - self.vertices[u]["base"].get_center()
+                this_edge_config = deepcopy(general_edge_config)
+                this_edge_config.update(specific_edge_config.get((u, v), dict()))
+                edge_label = labels.get((u, v), str((u, v)))
+
+                # This is a straight edge between two different vertices
+                if (v, u) in edges:
+                    # We need to offset two edges between the same vertices
+                    vec1 = self[v].get_center() - self[u].get_center()
                     vec2 = np.cross(vec1, np.array([0, 0, 1]))
 
                     length = np.linalg.norm(vec2)
-                    offset = 0.1 * vec2 / length
+                    offset = 0.1 * vec2 / length  # TODO: Make configurable?
                 else:
                     offset = np.array([0, 0, 0])
 
-                # Housekeeping
-                edge_type = type(edge)
-                tip = edge.pop_tips()[0]
-                edge_label = tmp_edge_conf[(u, v)].pop(
-                    "label", "update_edges fail")
+                # An empty label is different from one that doesn't exist
                 if edge_label == "":
                     edge_label = "\\epsilon"
-
-                new_edge = edge_type(
+                self.edges[(u, v)] = LabeledLine(
                     label=edge_label,
-                    start=self.vertices[u]["base"],
-                    end=self.vertices[v]["base"],
-                    **tmp_edge_conf[(u, v)]
+                    start=self[u],
+                    end=self[v],
+                    **this_edge_config
                 ).shift(offset)
-
-                edge.become(new_edge)
-                edge.add_tip(tip)
             else:
-                edge_label = tmp_edge_conf[(u, u)].pop(
-                    "label", "update_edges fail")
+                edge_label = labels.get((u, u), str((u, u)))
 
-                between = angle_between(self.vertices[u]["base"].get_center(
-                ) - self.vcenter(), np.array([1, 0, 0]))
+                this_edge_config = deepcopy(general_edge_config)
+                this_edge_config.update(specific_edge_config.get((u, v), dict()))
+
+                between = angle_between(self[u].get_center() - self.vcenter(), np.array([1, 0, 0]))
                 if self[u].get_center()[1] < self.vcenter()[1]:
                     between *= -1
 
                 loop = CurvedArrow(
-                    start_point=self.vertices[u]["base"].get_top(),
-                    end_point=self.vertices[u]["base"].get_bottom(),
+                    start_point=self[u].get_top(),
+                    end_point=self[u].get_bottom(),
                     angle=-4,
                     z_index=-1,
-                    **tmp_edge_conf[(u, u)]
+                    color=this_edge_config["color"]
                 )
                 label_mobject = MathTex(
                     edge_label,
-                    fill_color="white",
-                    font_size=40,
-                ).move_to(
-                    loop.get_center()
-                ).shift(np.array([0.5, 0, 0])).rotate(-1 * between)
+                    fill_color=this_edge_config["label_color"],
+                    font_size=this_edge_config["font_size"],
+                ).move_to(loop.get_center()).shift(
+                    np.array([0.5, 0, 0])
+                ).rotate(-1 * between)
 
                 label_background = BackgroundRectangle(
                     label_mobject,
                     buff=0.05,
-                    color="black",
-                    fill_opacity=1,
+                    color=this_edge_config["frame_fill_color"],
+                    fill_opacity=this_edge_config["frame_fill_opacity"],
                     stroke_width=0.5,
                 ).rotate(-1 * between)
                 label_frame = SurroundingRectangle(
                     label_mobject,
                     buff=0.05,
-                    color="white",
+                    color=this_edge_config["label_color"],
                     stroke_width=0.5
                 ).rotate(-1 * between)
 
@@ -422,10 +434,21 @@ class FiniteAutomaton(DiGraph):
                     label_background,
                     label_mobject
                 )
-                edge.become(label_group).rotate(
+                self.edges[(u, u)] = VGroup(label_group).rotate(
                     between,
-                    about_point=self.vertices[u]["base"].get_center()
+                    about_point=self[u].get_center()
                 )
+
+        for (u, v), edge in self.edges.items():
+            try:
+                if isinstance(edge, LabeledLine):
+                    edge.add_tip(**self._tip_config[(u, v)])
+            except TypeError:
+                print("Unexpected tip type!")
+                print(self._tip_config)
+                exit()
+
+        print(self.edges[('1', '1')][0][3])
 
     def _redraw_vertices(self) -> None:
         for vertex, opts in self.options["vertices"].items():

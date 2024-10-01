@@ -82,15 +82,13 @@ class FiniteAutomaton(DiGraph):
     def _vertex_config_from_bigconfig(self, config: dict) -> dict:
         # These keys in config.toml map to these keys in Manim
         toml_to_mobject: dict[str, str] = {
-            "vertex_color": "color",
-            "vertex_text_color": "label_fill_color",
-            "vertex_stroke_color": "stroke_color",
+            "vertex_color": "fill_color",
+            "vertex_stroke_color": "color",
             "vertex_radius": "radius"
         }
         # These are the kwargs that Manim understands and affect the appearance of the vertex
         mobject_keys: list[str] = [
             # From LabeledDot
-            "label_fill_color",
             "radius",
             # From Dot
             "point",
@@ -213,11 +211,19 @@ class FiniteAutomaton(DiGraph):
                 _vertex_config[vertex] = deepcopy(opts)
                 if "label" in opts:
                     del _vertex_config[vertex]["label"]
-                    _vertex_labels[vertex] = opts["label"]
+                    _vertex_labels[vertex] = MathTex(
+                        opts["label"],
+                        color=visual_config["vertex_text_color"],
+                        font_size=visual_config["font_size"]
+                    )
                 if "flags" in opts:
                     _flags[vertex] = _vertex_config[vertex].pop("flags")
                 else:
-                    _vertex_labels[vertex] = str(vertex)
+                    _vertex_labels[vertex] = MathTex(
+                        str(vertex),
+                        color=visual_config["vertex_text_color"],
+                        font_size=visual_config["font_size"]
+                    )
 
         # Setting up the edge config
         _edge_config: dict = self._edge_config_from_bigconfig(visual_config)
@@ -238,13 +244,22 @@ class FiniteAutomaton(DiGraph):
         # When it accepts configs, it takes global options (i.e. options that apply to every vertex/edge)
         #   and override options keyed to a specific vertex/edge name (which override the global ones).
         # That's what the above was for, trimming out any specific things and making sure the input is sanitary.
+        _general_vertex_config = dict()
+        _specific_vertex_config = dict()
+        for k, v in _vertex_config.items():
+            try:
+                int(k)
+                _specific_vertex_config[k] = v
+            except Exception as e:
+                _general_vertex_config[k] = v
+
         super().__init__(
             vertices,
             edges,
             vertex_type=LabeledDot,
             edge_type=LabeledLine,
             labels=_vertex_labels,  # This refers specifically to vertex labels
-            vertex_config=_vertex_config,
+            vertex_config=_general_vertex_config,
             edge_config=_edge_config,
             **_graph_config
         )

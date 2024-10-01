@@ -3,7 +3,7 @@
 # Geometry colors
 background_color = 0xeeeee4
 vertex_color = "black"
-vertex_text_color = "black"
+vertex_text_color = 0xeeeee4
 vertex_stroke_color = "black"
 edge_color = "black"
 edge_text_color = "black"
@@ -16,7 +16,7 @@ initial_state_color = "black"
 transition_color = 0xe28743
 
 # Geometry Config
-vertex_radius = 2
+vertex_radius = 0.4
 layout_scale = 2
 layout_type = "kamada_kawai"
 font_size = 40

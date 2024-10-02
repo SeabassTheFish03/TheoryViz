@@ -1,0 +1,29 @@
+# Geometry colors
+background_color = 0xF0F0FF
+vertex_color = 0xFFB6C1  # Light Pink
+vertex_text_color = 0x000000
+vertex_stroke_color = 0xFFB6C1
+edge_color = 0x87CEEB  # Light Sky Blue
+edge_text_color = 0x87CEEB
+table_border_color = 0x87CEEB
+
+# Theory Colors
+current_state_color = 0xFFF0F5  # Light Pink
+final_state_color = 0xFFB6C1
+initial_state_color = 0xFFB6C1
+transition_color = 0xFFF0F5  # Light Pink
+
+# Geometry Config
+vertex_radius = 0.3
+layout_scale = 2
+layout_type = "kamada_kawai"
+font_size = 40
+edge_label_position = 0.5 
+edge_label_frame = true 
+edge_label_frame_fill = 0xFFF0F5
+edge_label_frame_opacity = 1 
+
+# Theory Config
+show_initial_state_arrow = true
+show_final_state_annulus = true
+

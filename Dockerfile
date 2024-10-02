@@ -14,7 +14,9 @@ RUN apt-get update -qq \
         pkg-config \
         make \
         wget \
-        ghostscript
+        ghostscript \
+        curl \
+        sudo
 
 # setup a minimal texlive installation
 COPY docker/texlive-profile.txt /tmp/

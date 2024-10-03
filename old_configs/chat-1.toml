@@ -16,7 +16,7 @@ transition_color = 0xFFA500  # Orange
 # Geometry Config
 vertex_radius = 0.4
 layout_scale = 2
-layout_type = "spring"
+layout_type = "kamada_kawai"
 font_size = 40
 edge_label_position = 0.5 
 edge_label_frame = true 

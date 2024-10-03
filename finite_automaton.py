@@ -15,7 +15,7 @@ from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
 from manim.mobject.text.tex_mobject import MathTex
-from manim.mobject.types.vectorized_mobject import VGroup
+from manim.mobject.types.vectorized_mobject import VGroup, VDict
 
 from manim.animation.indication import Indicate
 
@@ -270,9 +270,16 @@ class FiniteAutomaton(DiGraph):
         self.add(*self.edges.values())
 
         # We add accessories using flags, and they live on top of the vertices
-        self.accessories: dict[str, VGroup] = {
+        accessories: dict[str, VGroup] = {
             k: VGroup().move_to(v.get_center()) for k, v in self.vertices.items()
         }
+        
+        for k, v in self.vertices.items():
+            self.vertices[k] = VDict({"base": v, "accessories": accessories[k]})
+
+        self.flags = _flags
+        self.visual_config = visual_config
+        self._redraw_vertices()
 
     def vcenter(self) -> np.ndarray:
         """
@@ -466,35 +473,33 @@ class FiniteAutomaton(DiGraph):
         print(self.edges[('1', '1')][0][3])
 
     def _redraw_vertices(self) -> None:
-        for vertex, opts in self.options["vertices"].items():
-            if "flags" in opts and len(opts["flags"]) > 0:
-                focused_flags: list[str] = opts["flags"]
-                if "i" in focused_flags:
-                    ray = vertex.get_center() - self.vcenter()
-                    start_arrow: Arrow = Arrow(
-                        start=ray * 2,
-                        end=ray * 1.05,
-                        fill_color="white",
-                        stroke_width=20
-                    )
-                    self.accessories.add(start_arrow)
+        for vertex, opts in self.flags.items():
+            if "i" in opts:
+                ray = self.vertices[vertex].get_center() - self.vcenter()
+                start_arrow: Arrow = Arrow(
+                    start=ray * 2,
+                    end=ray * 1.05,
+                    fill_color="white",
+                    stroke_width=20
+                )
+                self.vertices[vertex]["accessories"].add(start_arrow)
 
-                if "c" in focused_flags:
-                    vertex.set_color(self.visual_config["current_state_color"])
-                else:
-                    vertex.set_color(self.visual_config["vertex_color"])
+            if "c" in opts:
+                self.vertices[vertex].set_color(self.visual_config["current_state_color"])
+            else:
+                self.vertices[vertex].set_color(self.visual_config["vertex_color"])
 
-                if "f" in focused_flags:
-                    ring = Annulus(
-                        inner_radius=vertex["base"].width + 0.1 * self.layout_scale / 2,
-                        outer_radius=vertex["base"].width + 0.2 * self.layout_scale / 2,
-                        z_index=-1,
-                        fill_color="white"
-                    ).move_to(
-                        vertex["base"].get_center()
-                    ).scale(1 / self.layout_scale)
+            if "f" in opts:
+                ring = Annulus(
+                    inner_radius=self.vertices[vertex]["base"].width + 0.1 * self.layout_scale / 2,
+                    outer_radius=self.vertices[vertex]["base"].width + 0.2 * self.layout_scale / 2,
+                    z_index=-1,
+                    fill_color="white"
+                ).move_to(
+                    self.vertices[vertex]["base"].get_center()
+                ).scale(1 / self.layout_scale)
 
-                    self.accessories.add(ring)
+                self.vertices[vertex]["accessories"].add(ring)
 
     def add_flag(self, state: str, flag: str) -> None:
         if state in self.vertices:

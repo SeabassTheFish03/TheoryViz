@@ -67,6 +67,12 @@ class DFA_Manager:
             "edges": edges_with_options
         }
 
+        mobj_options["vertices"][json_object["initial_state"]]["flags"].append("i")
+        mobj_options["vertices"][json_object["initial_state"]]["flags"].append("c")
+
+        for state in json_object["final_states"]:
+            mobj_options["vertices"][state]["flags"].append("f")
+
         mobj = FiniteAutomaton(
             vertices=json_object["states"],
             edges=edges_with_options.keys(),

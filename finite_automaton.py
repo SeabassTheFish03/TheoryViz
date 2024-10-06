@@ -10,7 +10,7 @@ import numpy as np
 
 # Manim
 from manim.mobject.graph import DiGraph
-from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
+from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot, Arc
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
@@ -247,10 +247,9 @@ class FiniteAutomaton(DiGraph):
         _general_vertex_config = dict()
         _specific_vertex_config = dict()
         for k, v in _vertex_config.items():
-            try:
-                int(k)
+            if k in vertices:
                 _specific_vertex_config[k] = v
-            except Exception as e:
+            else:
                 _general_vertex_config[k] = v
 
         super().__init__(
@@ -271,9 +270,9 @@ class FiniteAutomaton(DiGraph):
 
         # We add accessories using flags, and they live on top of the vertices
         accessories: dict[str, VGroup] = {
-            k: VGroup().move_to(v.get_center()) for k, v in self.vertices.items()
+            k: VGroup() for k in self.vertices.keys()
         }
-        
+
         for k, v in self.vertices.items():
             self.vertices[k] = VDict({"base": v, "accessories": accessories[k]})
 
@@ -470,8 +469,6 @@ class FiniteAutomaton(DiGraph):
                 print(self._tip_config)
                 exit()
 
-        print(self.edges[('1', '1')][0][3])
-
     def _redraw_vertices(self) -> None:
         for vertex, opts in self.flags.items():
             if "i" in opts:
@@ -479,27 +476,32 @@ class FiniteAutomaton(DiGraph):
                 start_arrow: Arrow = Arrow(
                     start=ray * 2,
                     end=ray * 1.05,
-                    fill_color="white",
+                    fill_color=self.visual_config["vertex_color"],
                     stroke_width=20
                 )
                 self.vertices[vertex]["accessories"].add(start_arrow)
 
             if "c" in opts:
-                self.vertices[vertex].set_color(self.visual_config["current_state_color"])
+                self.vertices[vertex]["base"].set_color(self.visual_config["current_state_color"])
+                self.vertices[vertex]["base"].submobjects[0].set_color(self.visual_config["vertex_text_color"])
             else:
-                self.vertices[vertex].set_color(self.visual_config["vertex_color"])
+                self.vertices[vertex]["base"].set_color(self.visual_config["vertex_color"])
+                self.vertices[vertex]["base"].submobjects[0].set_color(self.visual_config["vertex_text_color"])
 
             if "f" in opts:
                 ring = Annulus(
-                    inner_radius=self.vertices[vertex]["base"].width + 0.1 * self.layout_scale / 2,
-                    outer_radius=self.vertices[vertex]["base"].width + 0.2 * self.layout_scale / 2,
+                    inner_radius=self.vertices[vertex]["base"].width + 0.1 * self.visual_config["layout_scale"] / 2,
+                    outer_radius=self.vertices[vertex]["base"].width + 0.2 * self.visual_config["layout_scale"] / 2,
                     z_index=-1,
-                    fill_color="white"
+                    fill_color=self.visual_config["vertex_color"]
                 ).move_to(
                     self.vertices[vertex]["base"].get_center()
-                ).scale(1 / self.layout_scale)
+                ).scale(1 / self.visual_config["layout_scale"])
 
                 self.vertices[vertex]["accessories"].add(ring)
+        self.remove(*self.vertices)
+        print(self.vertices)
+        self.add(*self.vertices.values())
 
     def add_flag(self, state: str, flag: str) -> None:
         if state in self.vertices:

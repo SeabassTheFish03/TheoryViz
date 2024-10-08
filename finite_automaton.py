@@ -9,8 +9,9 @@ from copy import deepcopy
 import numpy as np
 
 # Manim
+from manim.animation.indication import ApplyWave
 from manim.mobject.graph import DiGraph
-from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot, Arc
+from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
@@ -469,6 +470,24 @@ class FiniteAutomaton(DiGraph):
                 print(self._tip_config)
                 exit()
 
+    def update_edges(self, graph):
+        """
+        The GitHub has been updated to fix an issue since the last release of Manim
+
+        This is just a copy of that
+        """
+        for (u, v), edge in graph.edges.items():
+            if isinstance(edge, VGroup):
+                edge.move_to(graph[u].get_center())
+            else:
+                actual_edge = edge
+                tip = actual_edge.pop_tips()[0]
+                actual_edge.set_points_by_ends(
+                    graph[u].get_center(),
+                    graph[v].get_center(),
+                )
+                actual_edge.add_tip(tip)
+
     def _redraw_vertices(self) -> None:
         for vertex, opts in self.flags.items():
             if "i" in opts:
@@ -500,7 +519,6 @@ class FiniteAutomaton(DiGraph):
 
                 self.vertices[vertex]["accessories"].add(ring)
         self.remove(*self.vertices)
-        print(self.vertices)
         self.add(*self.vertices.values())
 
     def add_flag(self, state: str, flag: str) -> None:
@@ -524,10 +542,7 @@ class FiniteAutomaton(DiGraph):
         if (start, end) not in self.edges:
             raise Exception(f"Transition does not exist: {(start, end)}")
 
-        if start == end:
-            return Indicate(self.edges[(start, end)].copy())
-        else:
-            return Indicate(self._arrow_from(self.edges[(start, end)]))
+        return ApplyWave(self.edges[(start, end)])
 
     def __repr__(self) -> str:
         return f"Directed Graph with labeled edges with\

@@ -22,7 +22,7 @@ Based on the type specified in the `type` field, the program will expect certain
 ### InvalidFA
 If the formatting of the file is correct and the program can parse each part of it, but there is some irreconcilable inconsistency contained within, the program will throw an InvalidFA error.
 
-# SHOW
+# Show
 Usage: 'SHOW <obj_name>'
 
 Shows the object indicated in the <obj_name> in the frame. If the object is already shown, does nothing.
@@ -30,6 +30,71 @@ Shows the object indicated in the <obj_name> in the frame. If the object is alre
 ## On Success
 The object appears on the screen instantly.
 If used during the SETUP phase, the object will be shown on screen at the start of the video. If used during the ANIMATE phase, the object will appear at that part of the animation timeline.
+
+## Errors
+### Does Not Exist
+The object indicated at <obj_name> does not exist at the time of calling.
+
+# MOVE
+Usage: 'MOVE <obj_name> to <x, y>'
+
+Moves the object indicated in the <obj_name> to the location indicated by <x, y>. If the object is already at the desired location, does nothing.
+
+## On Success
+The object appears on the screen instantly at the desired location.
+
+
+## Errors
+### Does Not Exist
+The object indicated at <obj_name> does not exist at the time of calling.
+
+# Show
+Usage: 'SHOW <obj_name>'
+
+Shows the object indicated in the <obj_name> in the frame. If the object is already shown, does nothing.
+
+## On Success
+The object appears on the screen instantly.
+If used during the SETUP phase, the object will be shown on screen at the start of the video. If used during the ANIMATE phase, the object will appear at that part of the animation timeline.
+
+## Errors
+### Does Not Exist
+The object indicated at <obj_name> does not exist at the time of calling.
+
+# Animate
+Usage: ''
+
+Animates...
+
+## On Success
+
+
+
+## Errors
+### Does Not Exist
+The object indicated at <obj_name> does not exist at the time of calling.
+
+# Pause
+Usage: ''
+
+Animates...
+
+## On Success
+
+
+
+## Errors
+### Does Not Exist
+The object indicated at <obj_name> does not exist at the time of calling.
+
+# Play
+Usage: ''
+
+Animates...
+
+## On Success
+
+
 
 ## Errors
 ### Does Not Exist

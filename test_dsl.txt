@@ -1,1 +1,2 @@
-LOAD hereWeGo.json as hwg
+LOAD sample_dfa.json as mydfa
+SHOW mydfa

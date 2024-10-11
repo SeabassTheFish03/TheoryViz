@@ -1,13 +1,15 @@
 # TheoryViz
 TheoryViz is a program for displaying, animating, and transforming Finite Automata. It is meant as a teaching aid for Computer Theory professors and instructors, so they can focus on discussing concepts rather than spending time and energy drawing automata manually.
 ## Dependencies
-TheoryViz is built on top of two existing Python libraries: [Manim](https://github.com/ManimCommunity/manim) by the Manim Community and [Automata](https://github.com/caleb531/automata) by [Caleb Evans](https://github.com/caleb531).
+TheoryViz is built on top of three existing Python libraries: [Manim](https://github.com/ManimCommunity/manim) by the Manim Community, [Automata](https://github.com/caleb531/automata) by [Caleb Evans](https://github.com/caleb531), and [PyGraphviz](https://github.com/pygraphviz/pygraphviz) by (primarily) [Jarrod Millman](https://github.com/jarrodmillman).
 
 We use Manim for all the renderings and animations. The class we created, FiniteAutomaton, is built upon the DiGraph class in Manim. Automata is used as the back-end for all the automaton-related operations, such as NFA to DFA transformations, accepting/rejecting strings, etc.
 
+By sheer coincidence, we named our project TheoryViz before learning about the Graphviz library, but upon discovering it we immediately chose to integrate it into our algorithm to position our graph nodes. We like that it can factor in the length of our edge labels and adapt accordingly. The built-in NetworkX graph layout algorithms can't account for this.
+
 We would like to express our sincere gratitute to the maintainers of these libraries for making them open-source. This library would not be possible without them doing so.
 ### Licensing
-Both Manim and Automata are licensed under the MIT License and the text can be found in full in dependencies_license.txt. These libraries are both considered dependencies, and almost none of the code is copied. The exception is the Dockerfile from Manim, which we have adopted as our own Dockerfile (with the only addition being the installation of Automata). This library is licensed under the GPL 3, but for redundancy we are also including the MIT License.
+Both Manim and Automata are licensed under the MIT License. Graphviz is licensed under the 3-Clause BSD license. The licenses can be found in full in LICENSE.txt. These libraries are both considered dependencies, and almost none of the code is copied. The exception is the Dockerfile from Manim, which we have adopted as our own Dockerfile (with the only addition being the installation of Automata). This library is licensed under the GPL 3, but for redundancy we are also including the MIT License.
 
 # Installation
 ## Docker

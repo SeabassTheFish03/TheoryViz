@@ -1,4 +1,4 @@
-Below are the commands for the FSMIPR DSL
+Below are the commands for the TheoryViz DSL
 
 # Load
 Usage: `LOAD <file_name> AS <obj_name>`
@@ -7,7 +7,7 @@ Reads the file specified and attempts to interpret the contents. Stores the resu
 
 ## On Success
 If the FSMIPR can interpret the contents of the file (.txt or .json only), the program will respond with
-``` Loaded the <FA> contained in <file_name> as <obj_name> ```
+``` Loaded the <FA> contained in <file_name> as <obj_name>```
 The contents of the file must specify what type of FA it is (e.g. DFA, NFA, TM, etc.) or the file comprehension will fail. For confirmation, the program will tell the user what type of FA it thinks the data structure is.
 
 ## Errors
@@ -23,9 +23,9 @@ Based on the type specified in the `type` field, the program will expect certain
 If the formatting of the file is correct and the program can parse each part of it, but there is some irreconcilable inconsistency contained within, the program will throw an InvalidFA error.
 
 # Show
-Usage: 'SHOW <obj_name>'
+Usage: `SHOW <obj_name>`
 
-Shows the object indicated in the <obj_name> in the frame. If the object is already shown, does nothing.
+Shows the object indicated in the `<obj_name>` in the frame. If the object is already shown, does nothing.
 
 ## On Success
 The object appears on the screen instantly.
@@ -33,38 +33,46 @@ If used during the SETUP phase, the object will be shown on screen at the start 
 
 ## Errors
 ### Does Not Exist
-The object indicated at <obj_name> does not exist at the time of calling.
+The object indicated at `<obj_name>` does not exist at the time of calling. The interpreter will raise a KeyError in this case.
+### Too Many Arguments
+The interpreter contains an assertion that the number of arguments is 2. If the assertion is false then an AssertionError will be raised with error text indicating this.
 
 # MOVE
-Usage: 'MOVE <obj_name> to <x, y>'
+Usage: `MOVE <obj_name> TO <x, y>`
 
-Moves the object indicated in the <obj_name> to the location indicated by <x, y>. If the object is already at the desired location, does nothing.
+Moves the object indicated in the `<obj_name>` to the location indicated by `<x, y>`. If the object is already at the desired location, does nothing.
 
 ## On Success
-The object appears on the screen instantly at the desired location.
-
+The object's internal position is set to the specified coordinates. 
 
 ## Errors
 ### Does Not Exist
-The object indicated at <obj_name> does not exist at the time of calling.
+The object indicated at `<obj_name>` does not exist at the time of calling.
+### Malformed Command
+Some part of the command does not match the expectations of the interpreter.
+### Malformed Coordinates
+The number of coordinates passed was not exactly equal to 2.
 
-# Show
-Usage: 'SHOW <obj_name>'
+# SHIFT
+Usage: `SHIFT <obj_name> BY <x, y>`
 
-Shows the object indicated in the <obj_name> in the frame. If the object is already shown, does nothing.
+Shifts the object indicated in the `<obj_name>` by the offset indicated by `<x, y>`.
 
 ## On Success
-The object appears on the screen instantly.
-If used during the SETUP phase, the object will be shown on screen at the start of the video. If used during the ANIMATE phase, the object will appear at that part of the animation timeline.
+The object's internal position is shifted by the specified offest.
 
 ## Errors
 ### Does Not Exist
-The object indicated at <obj_name> does not exist at the time of calling.
+The object indicated at `<obj_name>` does not exist at the time of calling.
+### Malformed Command
+Some part of the command does not match the expectations of the interpreter.
+### Malformed Coordinates
+The number of coordinates passed was not exactly equal to 2.
 
 # Animate
-Usage: ''
+Usage: `ANIMATE <Command>`
 
-Animates...
+Animates the execution of the given command. Compatible with SHOW (uses the internal Manim `Create()`), MOVE, HIDE (uses the internal Manim `Uncreate()`)
 
 ## On Success
 
@@ -72,12 +80,11 @@ Animates...
 
 ## Errors
 ### Does Not Exist
-The object indicated at <obj_name> does not exist at the time of calling.
+The object indicated at `<obj_name>` does not exist at the time of calling.
 
 # Pause
-Usage: ''
-
-Animates...
+Usage: `PAUSE <n>`
+Pauses the animation for `n` seconds.
 
 ## On Success
 
@@ -85,7 +92,7 @@ Animates...
 
 ## Errors
 ### Does Not Exist
-The object indicated at <obj_name> does not exist at the time of calling.
+The object indicated at `<obj_name>` does not exist at the time of calling.
 
 # Play
 Usage: ''
@@ -98,4 +105,4 @@ Animates...
 
 ## Errors
 ### Does Not Exist
-The object indicated at <obj_name> does not exist at the time of calling.
+The object indicated at `<obj_name>` does not exist at the time of calling.

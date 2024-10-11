@@ -1,4 +1,4 @@
-from fa_manager import DFA_Manager, NFA_Manager, PDA_Manager, TM_Manager
+from fa_manager import DFA_Manager, NFA_Manager, TM_Manager
 import json
 import sys
 
@@ -6,8 +6,21 @@ from pathlib import Path
 
 from dsl_errors import MalformedCommandError, TypeNotRecognizedError, TypeNotSpecifiedError
 
+from manim.scene.scene import Scene
+
 # NOTE: This shouldn't run ridiculously slow, but a potential speedup
 #   I see is running each LOAD instruction concurrently.
+
+
+class OutputScene(Scene):
+    def __init__(self, commands=list()):
+        super().__init__()
+        self.commands = commands
+        self.context = {"mobjects": dict()}
+
+    def construct(self):
+        for command in self.commands:
+            exec(command)
 
 
 def read_file(pathobj, env):
@@ -45,12 +58,12 @@ def load_from_file(pathobj, varname, env):
 
 
 def triageLine(line, env):
+    tokens = line.split(" ")
+
     if line.startswith("LOAD "):
-        tokens = line.split(" ")
+        assert tokens[-2] == "AS", "Malformed Command: Missing or mistyped AS keyword"
 
-        if tokens[-2] != "AS":
-            raise MalformedCommandError()
-
+        # Theoretically this should allow for spaces in the filename
         filename = " ".join(tokens[1:-2])
         filename.removeprefix('\"')
         filename.removesuffix('\"')
@@ -60,6 +73,46 @@ def triageLine(line, env):
         varname = tokens[-1]
 
         load_from_file(pathobj, varname, env)
+    elif line.startsWith("SHOW "):
+        # Since variable names can't have spaces, have to make sure
+        #  no spaces made it into the query
+        assert len(tokens) == 2, f"Too many arguments: {len(tokens)}, expected 2"
+
+        # Possible KeyError, but we would want that to fail anyways
+        mobj = env[tokens[1]]
+
+        if "scene" not in env:
+            print("Creating an empty scene...")
+            env["scene"] = OutputScene()
+
+        # Adding the mobj to the Scene's internal context
+        env["scene"].context["mobjects"][tokens[1]] = mobj
+        env["scene"].commands.append(f"self.add(self.context[\"mobjects\"][{tokens[1]}])")
+    elif line.startswith("MOVE "):
+        assert tokens[2] == "TO", "Malformed Command: Missing or mistyped TO keyword"
+
+        # Now parsing the coords
+        coords = "".join(tokens[3:]).split(",")
+
+        assert len(coords) == 2, f"Malformed coordinates passed: got {len(coords)}, expected 2"
+
+        coords = [float(c) for c in coords]
+
+        mobj = env[tokens[1]]
+
+        env["scene"].commands.append(f"self.context[\"mobjects\"][{tokens[1]}].move_to({coords[0]},{coords[1]})")
+    elif line.startswith("SHIFT "):
+        assert tokens[2] == "BY", "Malformed Command: Missing or mistyped BY keyword"
+
+        coords = "".join(tokens[3:]).split(",")
+
+        assert len(coords) == 2, f"Malformed coordinates passed: got {len(coords)}, expected 2"
+
+        coords = [float(c) for c in coords]
+
+        mobj = env[tokens[1]]
+
+        env["scene"].commands.append(f"self.context[\"mobjects\"][{tokens[1]}].shift({coords[0]},{coords[1]})")
 
 
 if __name__ == "__main__":

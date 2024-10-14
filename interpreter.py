@@ -4,8 +4,6 @@ import sys
 
 from pathlib import Path
 
-from dsl_errors import MalformedCommandError, TypeNotRecognizedError, TypeNotSpecifiedError
-
 from manim.scene.scene import Scene
 
 # NOTE: This shouldn't run ridiculously slow, but a potential speedup
@@ -15,12 +13,15 @@ from manim.scene.scene import Scene
 class OutputScene(Scene):
     def __init__(self, commands=list()):
         super().__init__()
-        self.commands = commands
-        self.context = {"mobjects": dict()}
+        self.animations = list()
+        self.managers = dict()  # Format {"name": {"manager": FA_Manager, "show": bool}}
 
     def construct(self):
-        for command in self.commands:
-            exec(command)
+        if len(self.animations) > 0:
+            for anim in self.animations:
+                self.play(anim)
+        else:
+            self.add(*[manager_block["manager"].mobj for manager_block in self.managers.values() if manager_block["show"]])
 
 
 def read_file(pathobj, env):
@@ -31,13 +32,11 @@ def read_file(pathobj, env):
         triageLine(line, env)
 
 
-def load_from_file(pathobj, varname, env):
+def load_from_file(pathobj, varname, scene):
     with pathobj.open() as f:
         rawJson = json.loads(f.read())
 
-    if "type" not in rawJson:
-        raise TypeNotSpecifiedError()
-
+    # I want to raise a KeyError if "type" isn't there, hence no .get()
     if rawJson["type"].lower() == "dfa":
         created = DFA_Manager.from_json(rawJson)
     elif rawJson["type"].lower() == "nfa":
@@ -45,25 +44,19 @@ def load_from_file(pathobj, varname, env):
     elif rawJson["type"].lower() == "tm":
         created = TM_Manager.from_json(rawJson)
     else:
-        raise TypeNotRecognizedError(
+        raise TypeError(
             f'JSON claims type {rawJson["type"]}, which is not a valid type.'
         )
 
-    if varname in env:
-        print(
-            f"Overwrote existing FA at {varname}",
-            file=sys.stderr,
-        )
-    env[varname] = created
+    scene.managers["varname"] = created
 
 
-def triageLine(line, env):
+def triageLine(line, scene):
     tokens = line.split(" ")
 
     if line.startswith("LOAD "):
         assert tokens[-2] == "AS", "Malformed Command: Missing or mistyped AS keyword"
 
-        # Theoretically this should allow for spaces in the filename
         filename = " ".join(tokens[1:-2])
         filename.removeprefix('\"')
         filename.removesuffix('\"')
@@ -72,22 +65,14 @@ def triageLine(line, env):
 
         varname = tokens[-1]
 
-        load_from_file(pathobj, varname, env)
+        load_from_file(pathobj, varname, scene)
     elif line.startsWith("SHOW "):
         # Since variable names can't have spaces, have to make sure
         #  no spaces made it into the query
         assert len(tokens) == 2, f"Too many arguments: {len(tokens)}, expected 2"
 
         # Possible KeyError, but we would want that to fail anyways
-        mobj = env[tokens[1]]
-
-        if "scene" not in env:
-            print("Creating an empty scene...")
-            env["scene"] = OutputScene()
-
-        # Adding the mobj to the Scene's internal context
-        env["scene"].context["mobjects"][tokens[1]] = mobj
-        env["scene"].commands.append(f"self.add(self.context[\"mobjects\"][{tokens[1]}])")
+        scene.mobjects[tokens[1]]["show"] = True
     elif line.startswith("MOVE "):
         assert tokens[2] == "TO", "Malformed Command: Missing or mistyped TO keyword"
 
@@ -98,21 +83,15 @@ def triageLine(line, env):
 
         coords = [float(c) for c in coords]
 
-        mobj = env[tokens[1]]
-
-        env["scene"].commands.append(f"self.context[\"mobjects\"][{tokens[1]}].move_to({coords[0]},{coords[1]})")
+        scene.mobjects[tokens[1]]["mobj"].move_to([*coords, 0])
     elif line.startswith("SHIFT "):
         assert tokens[2] == "BY", "Malformed Command: Missing or mistyped BY keyword"
 
         coords = "".join(tokens[3:]).split(",")
-
+        coords = [float(c) for c in coords]
         assert len(coords) == 2, f"Malformed coordinates passed: got {len(coords)}, expected 2"
 
-        coords = [float(c) for c in coords]
-
-        mobj = env[tokens[1]]
-
-        env["scene"].commands.append(f"self.context[\"mobjects\"][{tokens[1]}].shift({coords[0]},{coords[1]})")
+        scene.mobjects[tokens[1]]["mobj"].shift([*coords, 0])
 
 
 if __name__ == "__main__":
@@ -127,7 +106,6 @@ if __name__ == "__main__":
         )
         exit(1)
 
-    env = dict()
+    scene = OutputScene()
 
-    read_file(infile, env)
-    print(env)
+    read_file(infile, scene)

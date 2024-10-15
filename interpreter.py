@@ -6,6 +6,8 @@ from pathlib import Path
 
 from manim.scene.scene import Scene
 
+from manim.scene.scene import Scene
+
 # NOTE: This shouldn't run ridiculously slow, but a potential speedup
 #   I see is running each LOAD instruction concurrently.
 
@@ -57,6 +59,7 @@ def triageLine(line, scene):
     if line.startswith("LOAD "):
         assert tokens[-2] == "AS", "Malformed Command: Missing or mistyped AS keyword"
 
+        # Theoretically this should allow for spaces in the filename
         filename = " ".join(tokens[1:-2])
         filename.removeprefix('\"')
         filename.removesuffix('\"')

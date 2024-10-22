@@ -101,8 +101,7 @@ Usage: 'PLAY'
 
 Resumes or starts the animation from its current state.
 ## On Success
-The animation continues from its paused state or plays from the beginning if it has yet to start playing.
+The animation continues from its paused state.
 
 ## Errors
-### Does Not Exist
-The object indicated at `<obj_name>` does not exist at the time of calling.
+If no PAUSE had been previously called, then PLAY will raise an exception

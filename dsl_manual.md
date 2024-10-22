@@ -87,21 +87,21 @@ Usage: `PAUSE <n>`
 Pauses the animation for `n` seconds.
 
 ## On Success
-
+The animation will stop and remain stopped for n seconds. After n seconds, the animation will continue.
 
 
 ## Errors
 ### Does Not Exist
-The object indicated at `<obj_name>` does not exist at the time of calling.
+The object indicated at `<obj_name>` does not exist at the time of calling. If there is no active animation or object that could be paused, it raises a DoesNotExist error.
+### Malformed Command
+If the number of arguments is incorrect or if <n> is not a valid number--i.e. negative--it throws a MalformedCommand error.
 
 # Play
-Usage: ''
+Usage: 'PLAY'
 
-Animates...
-
+Resumes or starts the animation from its current state.
 ## On Success
-
-
+The animation continues from its paused state or plays from the beginning if it has yet to start playing.
 
 ## Errors
 ### Does Not Exist

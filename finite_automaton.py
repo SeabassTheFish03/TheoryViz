@@ -1,5 +1,6 @@
 __all__ = {
-    "FiniteAutomaton"
+    "FiniteAutomaton",
+    "ProcessText"
 }
 
 # Standard Lib
@@ -9,16 +10,15 @@ from copy import deepcopy
 import numpy as np
 
 # Manim
-from manim.animation.indication import ApplyWave
+from manim.animation.indication import ApplyWave, Indicate
 from manim.mobject.graph import DiGraph
 from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
 from manim.mobject.text.tex_mobject import MathTex
+from manim.mobject.text.text_mobject import Text
 from manim.mobject.types.vectorized_mobject import VGroup, VDict
-
-from manim.animation.indication import Indicate
 
 
 def unit_vector(vector):
@@ -547,3 +547,7 @@ class FiniteAutomaton(DiGraph):
     def __repr__(self) -> str:
         return f"Directed Graph with labeled edges with\
             {len(self.vertices)} vertices and {len(self.edges)} edges"
+
+
+class ProcessText(Text):
+    pass

@@ -11,6 +11,8 @@ import numpy as np
 
 # Manim
 from manim.animation.indication import ApplyWave, Indicate
+from manim.animation.composition import Succession
+from manim.animation.creation import Unwrite
 from manim.mobject.graph import DiGraph
 from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
@@ -79,6 +81,98 @@ class FiniteAutomaton(DiGraph):
             'c': The vertex is the [c]urrent state (one allowed)
             'i': The vertex is the [i]nitial state (one allowed)
     """
+
+    def __init__(
+        self,
+        vertices: list[str],
+        edges: list[tuple[str, str]],
+        visual_config: dict,  # Expected to come straight from config.toml. Handles rest internally
+        options: dict = dict()
+    ) -> None:
+
+        # Setting up the vertex config
+        _vertex_config: dict = self._vertex_config_from_bigconfig(visual_config)
+        _vertex_labels: dict = dict()
+        _flags: dict = dict()
+
+        # Must handle labels and flags
+        if "vertices" in options:
+            for vertex, opts in options["vertices"].items():
+                _vertex_config[vertex] = deepcopy(opts)
+                if "label" in opts:
+                    del _vertex_config[vertex]["label"]
+                    _vertex_labels[vertex] = MathTex(
+                        opts["label"],
+                        color=visual_config["vertex_text_color"],
+                        font_size=visual_config["font_size"]
+                    )
+                if "flags" in opts:
+                    _flags[vertex] = _vertex_config[vertex].pop("flags")
+                else:
+                    _vertex_labels[vertex] = MathTex(
+                        str(vertex),
+                        color=visual_config["vertex_text_color"],
+                        font_size=visual_config["font_size"]
+                    )
+
+        # Setting up the edge config
+        _edge_config: dict = self._edge_config_from_bigconfig(visual_config)
+        _edge_labels: dict = dict()
+
+        if "edges" in options:
+            for (start, end), opts in options["edges"].items():
+                _edge_config[(start, end)] = deepcopy(opts)
+                if "label" in opts:
+                    del _edge_config[(start, end)]["label"]
+                    _edge_labels[(start, end)] = opts["label"]
+                else:
+                    _edge_labels[(start, end)] = str((start, end))
+
+        _graph_config = self._graph_config_from_bigconfig(visual_config)
+
+        # We let DiGraph (really, GenericGraph) do most of the heavy lifting.
+        # When it accepts configs, it takes global options (i.e. options that apply to every vertex/edge)
+        #   and override options keyed to a specific vertex/edge name (which override the global ones).
+        # That's what the above was for, trimming out any specific things and making sure the input is sanitary.
+        _general_vertex_config = dict()
+        _specific_vertex_config = dict()
+        for k, v in _vertex_config.items():
+            if k in vertices:
+                _specific_vertex_config[k] = v
+            else:
+                _general_vertex_config[k] = v
+
+        super().__init__(
+            vertices,
+            edges,
+            vertex_type=LabeledDot,
+            edge_type=LabeledLine,
+            labels=_vertex_labels,  # This refers specifically to vertex labels
+            vertex_config=_general_vertex_config,
+            edge_config=_edge_config,
+            **_graph_config
+        )
+        # Give the edges a little refresh since DiGraph isn't built
+        #  for edge labels
+        self.remove(*self.edges.values())
+        self._repopulate_edge_dict(edges, _edge_config, _edge_labels)
+        self.add(*self.edges.values())
+
+        # We add accessories using flags, and they live on top of the vertices
+        accessories: dict[str, VGroup] = {
+            k: VGroup() for k in self.vertices.keys()
+        }
+
+        for k, v in self.vertices.items():
+            self.vertices[k] = VDict({"base": v, "accessories": accessories[k]})
+
+        self.flags = _flags
+        self.visual_config = visual_config
+        self._redraw_vertices()
+
+    def __repr__(self) -> str:
+        return f"Directed Graph with labeled edges with\
+            {len(self.vertices)} vertices and {len(self.edges)} edges"
 
     def _vertex_config_from_bigconfig(self, config: dict) -> dict:
         # These keys in config.toml map to these keys in Manim
@@ -192,101 +286,6 @@ class FiniteAutomaton(DiGraph):
             if key in mobject_keys:
                 graph_config[str(key)] = value
         return graph_config
-
-    def __init__(
-        self,
-        vertices: list[str],
-        edges: list[tuple[str, str]],
-        visual_config: dict,  # Expected to come straight from config.toml. Handles rest internally
-        options: dict = dict()
-    ) -> None:
-
-        # Setting up the vertex config
-        _vertex_config: dict = self._vertex_config_from_bigconfig(visual_config)
-        _vertex_labels: dict = dict()
-        _flags: dict = dict()
-
-        # Must handle labels and flags
-        if "vertices" in options:
-            for vertex, opts in options["vertices"].items():
-                _vertex_config[vertex] = deepcopy(opts)
-                if "label" in opts:
-                    del _vertex_config[vertex]["label"]
-                    _vertex_labels[vertex] = MathTex(
-                        opts["label"],
-                        color=visual_config["vertex_text_color"],
-                        font_size=visual_config["font_size"]
-                    )
-                if "flags" in opts:
-                    _flags[vertex] = _vertex_config[vertex].pop("flags")
-                else:
-                    _vertex_labels[vertex] = MathTex(
-                        str(vertex),
-                        color=visual_config["vertex_text_color"],
-                        font_size=visual_config["font_size"]
-                    )
-
-        # Setting up the edge config
-        _edge_config: dict = self._edge_config_from_bigconfig(visual_config)
-        _edge_labels: dict = dict()
-
-        if "edges" in options:
-            for (start, end), opts in options["edges"].items():
-                _edge_config[(start, end)] = deepcopy(opts)
-                if "label" in opts:
-                    del _edge_config[(start, end)]["label"]
-                    _edge_labels[(start, end)] = opts["label"]
-                else:
-                    _edge_labels[(start, end)] = str((start, end))
-
-        _graph_config = self._graph_config_from_bigconfig(visual_config)
-
-        # We let DiGraph (really, GenericGraph) do most of the heavy lifting.
-        # When it accepts configs, it takes global options (i.e. options that apply to every vertex/edge)
-        #   and override options keyed to a specific vertex/edge name (which override the global ones).
-        # That's what the above was for, trimming out any specific things and making sure the input is sanitary.
-        _general_vertex_config = dict()
-        _specific_vertex_config = dict()
-        for k, v in _vertex_config.items():
-            if k in vertices:
-                _specific_vertex_config[k] = v
-            else:
-                _general_vertex_config[k] = v
-
-        super().__init__(
-            vertices,
-            edges,
-            vertex_type=LabeledDot,
-            edge_type=LabeledLine,
-            labels=_vertex_labels,  # This refers specifically to vertex labels
-            vertex_config=_general_vertex_config,
-            edge_config=_edge_config,
-            **_graph_config
-        )
-        # Give the edges a little refresh since DiGraph isn't built
-        #  for edge labels
-        self.remove(*self.edges.values())
-        self._repopulate_edge_dict(edges, _edge_config, _edge_labels)
-        self.add(*self.edges.values())
-
-        # We add accessories using flags, and they live on top of the vertices
-        accessories: dict[str, VGroup] = {
-            k: VGroup() for k in self.vertices.keys()
-        }
-
-        for k, v in self.vertices.items():
-            self.vertices[k] = VDict({"base": v, "accessories": accessories[k]})
-
-        self.flags = _flags
-        self.visual_config = visual_config
-        self._redraw_vertices()
-
-    def vcenter(self) -> np.ndarray:
-        """
-        Gets the average position of each vertex in the graph
-        """
-        centers: list = [vertex.get_center() for vertex in self.vertices.values()]
-        return np.average(np.array(centers), axis=0)
 
     # We're beholden to this function call in super().__init__()
     # This works just enough to avoid errors, then gets fixed by
@@ -470,24 +469,6 @@ class FiniteAutomaton(DiGraph):
                 print(self._tip_config)
                 exit()
 
-    def update_edges(self, graph):
-        """
-        The GitHub has been updated to fix an issue since the last release of Manim
-
-        This is just a copy of that
-        """
-        for (u, v), edge in graph.edges.items():
-            if isinstance(edge, VGroup):
-                edge.move_to(graph[u].get_center())
-            else:
-                actual_edge = edge
-                tip = actual_edge.pop_tips()[0]
-                actual_edge.set_points_by_ends(
-                    graph[u].get_center(),
-                    graph[v].get_center(),
-                )
-                actual_edge.add_tip(tip)
-
     def _redraw_vertices(self) -> None:
         for vertex, opts in self.flags.items():
             if "i" in opts:
@@ -521,6 +502,37 @@ class FiniteAutomaton(DiGraph):
         self.remove(*self.vertices)
         self.add(*self.vertices.values())
 
+    def _arrow_from(self, edge: LabeledLine | CurvedArrow) -> None:
+        return Arrow(
+            z_index=-2,
+            stroke_width=15
+        ).put_start_and_end_on(*edge.get_start_and_end())
+
+    def vcenter(self) -> np.ndarray:
+        """
+        Gets the average position of each vertex in the graph
+        """
+        centers: list = [vertex.get_center() for vertex in self.vertices.values()]
+        return np.average(np.array(centers), axis=0)
+
+    def update_edges(self, graph):
+        """
+        The GitHub has been updated to fix an issue since the last release of Manim
+
+        This is just a copy of that
+        """
+        for (u, v), edge in graph.edges.items():
+            if isinstance(edge, VGroup):
+                edge.move_to(graph[u].get_center())
+            else:
+                actual_edge = edge
+                tip = actual_edge.pop_tips()[0]
+                actual_edge.set_points_by_ends(
+                    graph[u].get_center(),
+                    graph[v].get_center(),
+                )
+                actual_edge.add_tip(tip)
+
     def add_flag(self, state: str, flag: str) -> None:
         if state in self.vertices:
             self.options["flags"][state].append(flag)
@@ -532,22 +544,25 @@ class FiniteAutomaton(DiGraph):
                 self.flags[state].remove(flag)
         self._redraw_vertices()
 
-    def _arrow_from(self, edge: LabeledLine | CurvedArrow) -> None:
-        return Arrow(
-            z_index=-2,
-            stroke_width=15
-        ).put_start_and_end_on(*edge.get_start_and_end())
-
     def transition_animation(self, start: LabeledDot, end: LabeledDot) -> Indicate:
-        if (start, end) not in self.edges:
-            raise Exception(f"Transition does not exist: {(start, end)}")
+        assert (start, end) in self.edges, f"Transition does not exist: {(start, end)}"
 
-        return ApplyWave(self.edges[(start, end)])
-
-    def __repr__(self) -> str:
-        return f"Directed Graph with labeled edges with\
-            {len(self.vertices)} vertices and {len(self.edges)} edges"
+        return Succession(
+            ApplyWave(self.edges[(start, end)], direction=[-1, -1, 0]),
+            Indicate(self.vertices[end])
+        )
 
 
 class ProcessText(Text):
-    pass
+    def next_letter(self):
+        if not hasattr(self, 'textptr'):
+            self.textptr = 1
+
+        return self.original_text[self.textptr - 1]
+
+    def RemoveOneCharacter(self):
+        if not hasattr(self, 'textptr'):
+            self.textptr = 0
+
+        self.textptr += 1
+        return Unwrite(self[self.textptr - 1])

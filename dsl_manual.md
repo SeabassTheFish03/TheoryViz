@@ -1,3 +1,5 @@
+#Formatting of the DSL .viz file
+
 Below are the commands for the FSMIPR DSL
 
 # Load

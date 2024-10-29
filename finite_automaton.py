@@ -589,11 +589,15 @@ class FiniteAutomaton(DiGraph):
         for vertex, opts in self.flags.items():
             if "i" in opts:
                 ray = self.vertices[vertex].get_center() - self.vcenter()
+                if self.visual_config["layout_scale"] > 2:
+                    fake_start =ray * 8/self.visual_config["layout_scale"]
+                else:
+                    fake_start = ray * 2
                 start_arrow: Arrow = Arrow(
-                    start=ray * 2,
-                    end=ray * 1.05,
+                    start=fake_start,
+                    end=ray * 1,
                     fill_color=self.visual_config["vertex_color"],
-                    stroke_width=20
+                    stroke_width=5
                 )
                 self.vertices[vertex]["accessories"].add(start_arrow)
 

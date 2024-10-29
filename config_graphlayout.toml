@@ -16,9 +16,9 @@ transition_color = "yellow"
 
 # Geometry Config
 vertex_radius = 0.3
-layout_scale = 2 #edit in redrawvertices in finited automaton file
-layout_type = "kamada_kawai"#"planar"#"shell"#"circular"#"spring" #"kamada_kawai"
-# Random sucks, planar not great, spectral, not spiral, tree must be used with trees
+layout_scale = 5 #edit in redrawvertices in finited automaton file
+layout_type = "planar"#"shell"#"circular"#"spring" #"kamada_kawai"
+# Random sucks, spectral, not spiral, tree must be used with trees
 font_size = 40
 edge_label_position = 0.5 # Must be [0,1], how far along the line is label?
 edge_label_frame = true # Should edge label have a frame?

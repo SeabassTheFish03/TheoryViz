@@ -25,3 +25,6 @@ Open terminal.
 Run: cd .\team-repo-16-computing-visualizations\
 Run: py display.py .\fa_vault\sample_dfa.json .\config_template.toml
 
+#Formatting of Config file
+DO TOMORROW
+

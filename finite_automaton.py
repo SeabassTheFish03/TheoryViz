@@ -164,6 +164,7 @@ class FiniteAutomaton(DiGraph):
     def _graph_config_from_bigconfig(self, config: dict) -> dict:
         toml_to_mobject: dict[str, str] = {
             "layout_type": "layout",
+            "root_vertex" : 0,
             "vertex_text_color": "label_fill_color",
         }
 
@@ -261,6 +262,8 @@ class FiniteAutomaton(DiGraph):
             labels=_vertex_labels,  # This refers specifically to vertex labels
             vertex_config=_general_vertex_config,
             edge_config=_edge_config,
+            #layout_scale=2,
+            partitions=None, #will not use partitions - not applicable to our representations of these graphs.
             **_graph_config
         )
         # Give the edges a little refresh since DiGraph isn't built
@@ -488,7 +491,7 @@ class FiniteAutomaton(DiGraph):
                 )
                 actual_edge.add_tip(tip)
 
-    def _redraw_vertices(self) -> None:
+    def _redraw_vertices(self) -> None: #TODO edit so the arrow doesn't get so weirdly large when scale is changed
         for vertex, opts in self.flags.items():
             if "i" in opts:
                 ray = self.vertices[vertex].get_center() - self.vcenter()

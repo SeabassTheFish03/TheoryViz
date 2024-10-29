@@ -1,5 +1,7 @@
 from automata.fa.dfa import DFA
 
+import numpy as np
+
 from manim.mobject.types.vectorized_mobject import VDict
 from manim.animation.composition import Succession, AnimationGroup
 
@@ -21,7 +23,7 @@ class DFA_Manager:
         })
 
         self.mobj["dfa"].move_to([0, 0, 0])
-        self.mobj["text"].move_to([0, 1, 0])
+        self.mobj["text"].next_to(self.mobj["dfa"], np.array([0, 1, 0]))
 
         self.current_state = self.auto.initial_state
         self.input_string = input_string
@@ -95,15 +97,21 @@ class DFA_Manager:
 
         return cls(auto, mobj, config, input_string)
 
-    def animate(self):
+    def animate(self) -> Succession:
         sequence = []
-        for i in range(len(self.input_string)):
+        for _ in self.input_string:
+            next_state = self.dfa._get_next_current_state(self.current_state, self.mobj["text"].peek_next_letter())
             sequence.append(
                 AnimationGroup(
                     self.mobj["text"].RemoveOneCharacter(),
-                    self.mobj["dfa"].transition_animation(self.current_state, self.dfa._get_next_current_state(self.current_state, self.mobj["text"].next_letter()))
+                    self.mobj["dfa"].transition_animation(self.current_state, next_state)
                 )
             )
+            self.mobj["dfa"].remove_flag(self.current_state, "c")
+            self.mobj["text"].increment_letter()
+            self.mobj["dfa"].add_flag(next_state, "c")
+
+            self.current_state = next_state
 
         return Succession(*sequence)
 

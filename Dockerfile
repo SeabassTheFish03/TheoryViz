@@ -1,7 +1,7 @@
 # Use the official Python slim base image
 FROM python:3.11-slim
 
-# Install essential system dependencies for Manim, Automata-lib, LaTeX, and FFmpeg
+# Install  system dependencies for Manim, Automata-lib, LaTeX, and FFmpeg
 RUN apt-get update && apt-get install --no-install-recommends -y \
     build-essential \
     libcairo2-dev \

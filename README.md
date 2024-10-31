@@ -21,3 +21,12 @@ We don't claim to know anything about the Python package/module system, so manua
 # Notes
 ## Terminology
 In various parts throughout the code, we use some terms to refer to the geometry of the automata, and other terms to refer to the concepts in Computer Theory the geometry are meant to represent. Terms like "node," "vertex," and "edge" are meant to refer to the specific geometry of the automata, and terms like "state" and "transition" are used to refer to the theory concepts.
+
+# Run the Code (Zoe Notes)
+Open terminal.
+Run: cd .\team-repo-16-computing-visualizations\
+Run: py display.py .\fa_vault\sample_dfa.json .\config_template.toml
+
+#Formatting of Config file
+DO TOMORROW
+

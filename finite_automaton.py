@@ -1,5 +1,6 @@
 __all__ = {
-    "FiniteAutomaton"
+    "FiniteAutomaton",
+    "ProcessText"
 }
 
 # Standard Lib
@@ -9,16 +10,17 @@ from copy import deepcopy
 import numpy as np
 
 # Manim
-from manim.animation.indication import ApplyWave
+from manim.animation.indication import ApplyWave, Indicate
+from manim.animation.composition import Succession
+from manim.animation.creation import Unwrite
 from manim.mobject.graph import DiGraph
 from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
 from manim.mobject.text.tex_mobject import MathTex
+from manim.mobject.text.text_mobject import Text
 from manim.mobject.types.vectorized_mobject import VGroup, VDict
-
-from manim.animation.indication import Indicate
 
 
 def unit_vector(vector):
@@ -79,119 +81,6 @@ class FiniteAutomaton(DiGraph):
             'c': The vertex is the [c]urrent state (one allowed)
             'i': The vertex is the [i]nitial state (one allowed)
     """
-
-    def _vertex_config_from_bigconfig(self, config: dict) -> dict:
-        # These keys in config.toml map to these keys in Manim
-        toml_to_mobject: dict[str, str] = {
-            "vertex_color": "fill_color",
-            "vertex_stroke_color": "color",
-            "vertex_radius": "radius"
-        }
-        # These are the kwargs that Manim understands and affect the appearance of the vertex
-        mobject_keys: list[str] = [
-            # From LabeledDot
-            "radius",
-            # From Dot
-            "point",
-            "stroke_width",
-            "fill_opacity",
-            "color",
-            # From Circle
-            # From Arc
-            # From TipableVMobject
-            # From VMobject
-            "fill_color",
-            "stroke_color",
-            "stroke_opacity",
-            "background_stroke_color",
-            "background_stroke_opacity",
-            "background_stroke_width",
-            "sheen_factor",
-            "sheen_direction",
-        ]
-
-        vertex_config: dict = dict()
-        for key, value in config.items():
-            # If it's in there, translate, else let it pass
-            key = toml_to_mobject.get(key, key)
-
-            if key in mobject_keys:
-                vertex_config[str(key)] = value
-        return vertex_config
-
-    def _edge_config_from_bigconfig(self, config: dict) -> dict:
-        toml_to_mobject: dict[str, str] = {
-            "edge_color": "color",
-            "edge_text_color": "label_color",
-            "edge_label_position": "label_position",
-            "edge_label_frame": "label_frame",
-            "edge_label_frame_fill": "frame_fill_color",
-            "edge_label_frame_opacity": "frame_fill_opacity",
-        }
-
-        # These are the kwargs that Manim understands and affect the appearance of the edge
-        mobject_keys: list[str] = [
-            # From LabeledLine
-            "color",
-            "label_color",
-            "font_size",
-            "label_position",
-            "label_frame",
-            "frame_fill_color",
-            "frame_fill_opacity",
-            # From Line
-            # From TipableVMobject
-            # From VMobject
-            "fill_color",
-            "stroke_color",
-            "stroke_opacity",
-            "background_stroke_color",
-            "background_stroke_opacity",
-            "background_stroke_width",
-            "sheen_factor",
-            "sheen_direction",
-        ]
-
-        edge_config: dict = dict()
-        for key, value in config.items():
-            # If it's in there, translate, else let it pass
-            key = toml_to_mobject.get(key, key)
-
-            if key in mobject_keys:
-                edge_config[str(key)] = value
-        return edge_config
-
-    def _graph_config_from_bigconfig(self, config: dict) -> dict:
-        toml_to_mobject: dict[str, str] = {
-            "layout_type": "layout",
-            "vertex_text_color": "label_fill_color",
-        }
-
-        # These are the kwargs that Manim understands and affect the appearance of the edge
-        mobject_keys: list[str] = [
-            # From GenericGraph
-            "label_fill_color",
-            "layout",
-            "layout_scale",
-            # From VMobject
-            "fill_color",
-            "stroke_color",
-            "stroke_opacity",
-            "background_stroke_color",
-            "background_stroke_opacity",
-            "background_stroke_width",
-            "sheen_factor",
-            "sheen_direction",
-        ]
-
-        graph_config: dict = dict()
-        for key, value in config.items():
-            # If it's in there, translate, else let it pass
-            key = toml_to_mobject.get(key, key)
-
-            if key in mobject_keys:
-                graph_config[str(key)] = value
-        return graph_config
 
     def __init__(
         self,
@@ -279,7 +168,125 @@ class FiniteAutomaton(DiGraph):
 
         self.flags = _flags
         self.visual_config = visual_config
-        self._redraw_vertices()
+        self._init_vertices()
+
+    def __repr__(self) -> str:
+        return f"Directed Graph with labeled edges with\
+            {len(self.vertices)} vertices and {len(self.edges)} edges"
+
+    def _vertex_config_from_bigconfig(self, config: dict) -> dict:
+        # These keys in config.toml map to these keys in Manim
+        toml_to_mobject: dict[str, str] = {
+            "vertex_color": "fill_color",
+            "vertex_stroke_color": "color",
+            "vertex_radius": "radius"
+        }
+        # These are the kwargs that Manim understands and affect the appearance of the vertex
+        mobject_keys: list[str] = [
+            # From LabeledDot
+            "radius",
+            # From Dot
+            "point",
+            "stroke_width",
+            "fill_opacity",
+            "color",
+            # From Circle
+            # From Arc
+            # From TipableVMobject
+            # From VMobject
+            "fill_color",
+            "stroke_color",
+            "stroke_opacity",
+            "background_stroke_color",
+            "background_stroke_opacity",
+            "background_stroke_width",
+            "sheen_factor",
+            "sheen_direction",
+        ]
+
+        vertex_config: dict = dict()
+        for key, value in config.items():
+            # If it's in there, translate, else let it pass
+            key = toml_to_mobject.get(key, key)
+
+            if key in mobject_keys:
+                vertex_config[str(key)] = value
+        return vertex_config
+
+    def _edge_config_from_bigconfig(self, config: dict) -> dict:
+        toml_to_mobject: dict[str, str] = {
+            "edge_color": "color",
+            "edge_text_color": "label_color",
+            "edge_label_position": "label_position",
+            "edge_label_frame": "label_frame",
+            "edge_label_frame_fill": "frame_fill_color",
+            "edge_label_frame_opacity": "frame_fill_opacity",
+        }
+
+        # These are the kwargs that Manim understands and affect the appearance of the edge
+        mobject_keys: list[str] = [
+            # From LabeledLine
+            "color",
+            "label_color",
+            "font_size",
+            "label_position",
+            "label_frame",
+            "frame_fill_color",
+            "frame_fill_opacity",
+            # From Line
+            # From TipableVMobject
+            # From VMobject
+            "fill_color",
+            "stroke_color",
+            "stroke_opacity",
+            "background_stroke_color",
+            "background_stroke_opacity",
+            "background_stroke_width",
+            "sheen_factor",
+            "sheen_direction",
+        ]
+
+        edge_config: dict = dict()
+        for key, value in config.items():
+            # If it's in there, translate, else let it pass
+            key = toml_to_mobject.get(key, key)
+
+            if key in mobject_keys:
+                edge_config[str(key)] = value
+        return edge_config
+
+    def _graph_config_from_bigconfig(self, config: dict) -> dict:
+        toml_to_mobject: dict[str, str] = {
+            "layout_type": "layout",
+            "root_vertex": 0,
+            "vertex_text_color": "label_fill_color",
+        }
+
+        # These are the kwargs that Manim understands and affect the appearance of the edge
+        mobject_keys: list[str] = [
+            # From GenericGraph
+            "label_fill_color",
+            "layout",
+            "layout_scale",
+            # From VMobject
+            "fill_color",
+            "stroke_color",
+            "stroke_opacity",
+            "background_stroke_color",
+            "background_stroke_opacity",
+            "background_stroke_width",
+            "sheen_factor",
+            "sheen_direction",
+        ]
+
+        graph_config: dict = dict()
+        for key, value in config.items():
+            # If it's in there, translate, else let it pass
+            key = toml_to_mobject.get(key, key)
+
+            if key in mobject_keys:
+                graph_config[str(key)] = value
+        return graph_config
 
     def vcenter(self) -> np.ndarray:
         """
@@ -454,9 +461,9 @@ class FiniteAutomaton(DiGraph):
                     loop,
                     label_frame,
                     label_background,
-                    label_mobject
+                    label_mobject,
                 )
-                self.edges[(u, u)] = VGroup(label_group).rotate(
+                self.edges[(u, u)] = label_group.rotate(
                     between,
                     about_point=self[u].get_center()
                 )
@@ -470,43 +477,21 @@ class FiniteAutomaton(DiGraph):
                 print(self._tip_config)
                 exit()
 
-    def update_edges(self, graph):
-        """
-        The GitHub has been updated to fix an issue since the last release of Manim
-
-        This is just a copy of that
-        """
-        for (u, v), edge in graph.edges.items():
-            if isinstance(edge, VGroup):
-                edge.move_to(graph[u].get_center())
-            else:
-                actual_edge = edge
-                tip = actual_edge.pop_tips()[0]
-                actual_edge.set_points_by_ends(
-                    graph[u].get_center(),
-                    graph[v].get_center(),
-                )
-                actual_edge.add_tip(tip)
-
-    def _redraw_vertices(self) -> None:
+    def _init_vertices(self) -> None:
         for vertex, opts in self.flags.items():
             if "i" in opts:
                 ray = self.vertices[vertex].get_center() - self.vcenter()
+                if self.visual_config["layout_scale"] > 2:
+                    fake_start = ray * 8 / self.visual_config["layout_scale"]
+                else:
+                    fake_start = ray * 2
                 start_arrow: Arrow = Arrow(
-                    start=ray * 2,
-                    end=ray * 1.05,
+                    start=fake_start,
+                    end=ray * 1,
                     fill_color=self.visual_config["vertex_color"],
-                    stroke_width=20
+                    stroke_width=5
                 )
                 self.vertices[vertex]["accessories"].add(start_arrow)
-
-            if "c" in opts:
-                self.vertices[vertex]["base"].set_color(self.visual_config["current_state_color"])
-                self.vertices[vertex]["base"].submobjects[0].set_color(self.visual_config["vertex_text_color"])
-            else:
-                self.vertices[vertex]["base"].set_color(self.visual_config["vertex_color"])
-                self.vertices[vertex]["base"].submobjects[0].set_color(self.visual_config["vertex_text_color"])
-
             if "f" in opts:
                 ring = Annulus(
                     inner_radius=self.vertices[vertex]["base"].width + 0.1 * self.visual_config["layout_scale"] / 2,
@@ -518,19 +503,22 @@ class FiniteAutomaton(DiGraph):
                 ).scale(1 / self.visual_config["layout_scale"])
 
                 self.vertices[vertex]["accessories"].add(ring)
-        self.remove(*self.vertices)
+
         self.add(*self.vertices.values())
 
-    def add_flag(self, state: str, flag: str) -> None:
-        if state in self.vertices:
-            self.options["flags"][state].append(flag)
-        self._redraw_vertices()
+    def _redraw_vertices(self) -> None:
+        for vertex, opts in self.flags.items():
+            # The initial and final states should not change for the duration of the animation,
+            #   so they are not handled here. See _init_vertices()
+            if "c" in opts:
+                self.vertices[vertex]["base"].set_color(self.visual_config["current_state_color"])
+                self.vertices[vertex]["base"].submobjects[0].set_color(self.visual_config["vertex_text_color"])
+            else:
+                self.vertices[vertex]["base"].set_color(self.visual_config["vertex_color"])
+                self.vertices[vertex]["base"].submobjects[0].set_color(self.visual_config["vertex_text_color"])
 
-    def remove_flag(self, state: str, flag: str) -> None:
-        if state in self.vertices:
-            if flag in self.flags[state]:
-                self.flags[state].remove(flag)
-        self._redraw_vertices()
+        self.remove(*self.vertices.values())
+        self.add(*self.vertices.values())
 
     def _arrow_from(self, edge: LabeledLine | CurvedArrow) -> None:
         return Arrow(
@@ -538,12 +526,70 @@ class FiniteAutomaton(DiGraph):
             stroke_width=15
         ).put_start_and_end_on(*edge.get_start_and_end())
 
-    def transition_animation(self, start: LabeledDot, end: LabeledDot) -> Indicate:
-        if (start, end) not in self.edges:
-            raise Exception(f"Transition does not exist: {(start, end)}")
+    def update_edges(self, graph):
+        """
+        The GitHub has been updated to fix an issue since the last release of Manim
 
-        return ApplyWave(self.edges[(start, end)])
+        This is just a copy of that
+        """
+        for (u, v), edge in graph.edges.items():
+            if u != v:
+                if (v, u) in graph.edges:
+                    # We need to offset two edges between the same vertices
+                    vec1 = self[v].get_center() - self[u].get_center()
+                    vec2 = np.cross(vec1, np.array([0, 0, 1]))
 
-    def __repr__(self) -> str:
-        return f"Directed Graph with labeled edges with\
-            {len(self.vertices)} vertices and {len(self.edges)} edges"
+                    length = np.linalg.norm(vec2)
+                    offset = 0.1 * vec2 / length  # TODO: Make configurable?
+                else:
+                    offset = np.array([0, 0, 0])
+
+                tip = edge.pop_tips()[0]
+                edge.set_points_by_ends(
+                    graph[u]["base"].get_center() + np.dot(offset, np.array([1, 0, 0])),
+                    graph[v]["base"].get_center() + np.dot(offset, np.array([0, 1, 0])),
+                    buff=self.visual_config["vertex_radius"],
+                    path_arc=0
+                )
+                edge.add_tip(tip)
+
+    def add_flag(self, state: str, flag: str) -> None:
+        assert state in self.vertices, "State does not exist"
+        assert flag not in self.flags[state], f"Flag {flag} already applied to state {state}"
+
+        self.flags[state].append(flag)
+        self._redraw_vertices()
+
+    def remove_flag(self, state: str, flag: str) -> None:
+        assert state in self.vertices, "State does not exist"
+        assert flag in self.flags[state], f"Flag {flag} not applied to state {state}"
+
+        self.flags[state].remove(flag)
+        self._redraw_vertices()
+
+    def transition_animation(self, start: LabeledDot, end: LabeledDot) -> Succession:
+        assert (start, end) in self.edges, f"Transition does not exist: {(start, end)}"
+
+        return Succession(
+            ApplyWave(self.edges[(start, end)]),
+            Indicate(self.vertices[end]["base"])
+        )
+
+
+class ProcessText(Text):
+    def __init__(self, text: str, **kwargs) -> None:
+        super().__init__(text, **kwargs)
+
+        if ' ' in text:
+            print("Warning, the rendering engine does not play well with whitespace. Consider replaceing with a different character, like _ (underscore)")
+
+        self.textptr = 0
+
+    def peek_next_letter(self) -> str:
+        return self.original_text[self.textptr]
+
+    def increment_letter(self) -> None:
+        self.textptr += 1
+
+    def RemoveOneCharacter(self) -> Unwrite:
+        return Unwrite(self[self.textptr])

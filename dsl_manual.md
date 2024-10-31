@@ -1,4 +1,5 @@
-Below are the commands for the TheoryViz DSL
+# Formatting of the DSL .viz file
+Below are the commands for the FSMIPR DSL
 
 # Load
 Usage: `LOAD <file_name> AS <obj_name>`

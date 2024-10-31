@@ -112,6 +112,7 @@ class DFA_Manager:
             self.mobj["dfa"].add_flag(next_state, "c")
 
             self.current_state = next_state
+            print(self.mobj["dfa"]["3"].color)
 
         return Succession(*sequence)
 

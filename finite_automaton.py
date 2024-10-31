@@ -14,7 +14,7 @@ from manim.animation.indication import ApplyWave, Indicate
 from manim.animation.composition import Succession
 from manim.animation.creation import Unwrite
 from manim.mobject.graph import DiGraph
-from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot, Dot
+from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
@@ -288,96 +288,6 @@ class FiniteAutomaton(DiGraph):
                 graph_config[str(key)] = value
         return graph_config
 
-    def __init__(
-        self,
-        vertices: list[str],
-        edges: list[tuple[str, str]],
-        visual_config: dict,  # Expected to come straight from config.toml. Handles rest internally
-        options: dict = dict()
-    ) -> None:
-
-        # Setting up the vertex config
-        _vertex_config: dict = self._vertex_config_from_bigconfig(visual_config)
-        _vertex_labels: dict = dict()
-        _flags: dict = dict()
-
-        # Must handle labels and flags
-        if "vertices" in options:
-            for vertex, opts in options["vertices"].items():
-                _vertex_config[vertex] = deepcopy(opts)
-                if "label" in opts:
-                    del _vertex_config[vertex]["label"]
-                    _vertex_labels[vertex] = MathTex(
-                        opts["label"],
-                        color=visual_config["vertex_text_color"],
-                        font_size=visual_config["font_size"]
-                    )
-                if "flags" in opts:
-                    _flags[vertex] = _vertex_config[vertex].pop("flags")
-                else:
-                    _vertex_labels[vertex] = MathTex(
-                        str(vertex),
-                        color=visual_config["vertex_text_color"],
-                        font_size=visual_config["font_size"]
-                    )
-
-        # Setting up the edge config
-        _edge_config: dict = self._edge_config_from_bigconfig(visual_config)
-        _edge_labels: dict = dict()
-
-        if "edges" in options:
-            for (start, end), opts in options["edges"].items():
-                _edge_config[(start, end)] = deepcopy(opts)
-                if "label" in opts:
-                    del _edge_config[(start, end)]["label"]
-                    _edge_labels[(start, end)] = opts["label"]
-                else:
-                    _edge_labels[(start, end)] = str((start, end))
-
-        _graph_config = self._graph_config_from_bigconfig(visual_config)
-
-        # We let DiGraph (really, GenericGraph) do most of the heavy lifting.
-        # When it accepts configs, it takes global options (i.e. options that apply to every vertex/edge)
-        #   and override options keyed to a specific vertex/edge name (which override the global ones).
-        # That's what the above was for, trimming out any specific things and making sure the input is sanitary.
-        _general_vertex_config = dict()
-        _specific_vertex_config = dict()
-        for k, v in _vertex_config.items():
-            if k in vertices:
-                _specific_vertex_config[k] = v
-            else:
-                _general_vertex_config[k] = v
-
-        super().__init__(
-            vertices,
-            edges,
-            vertex_type=LabeledDot,
-            edge_type=LabeledLine,
-            labels=_vertex_labels,  # This refers specifically to vertex labels
-            vertex_config=_general_vertex_config,
-            edge_config=_edge_config,
-            # layout_scale=2,
-            partitions=None,  # will not use partitions - not applicable to our representations of these graphs.
-            **_graph_config
-        )
-        # Give the edges a little refresh since DiGraph isn't built
-        #  for edge labels
-        self.remove(*self.edges.values())
-        self._repopulate_edge_dict(edges, _edge_config, _edge_labels)
-        self.add(*self.edges.values())
-
-        # We add accessories using flags, and they live on top of the vertices
-        accessories: dict[str, VGroup] = {
-            k: VGroup() for k in self.vertices.keys()
-        }
-
-        for k, v in self.vertices.items():
-            self.vertices[k] = VDict({"base": v, "accessories": accessories[k]})
-
-        self.flags = _flags
-        self.visual_config = visual_config
-        self._redraw_vertices()
-
     def vcenter(self) -> np.ndarray:
         """
         Gets the average position of each vertex in the graph
@@ -597,7 +507,6 @@ class FiniteAutomaton(DiGraph):
         self.add(*self.vertices.values())
 
     def _redraw_vertices(self) -> None:
-        print(self.flags)
         for vertex, opts in self.flags.items():
             # The initial and final states should not change for the duration of the animation,
             #   so they are not handled here. See _init_vertices()
@@ -608,7 +517,7 @@ class FiniteAutomaton(DiGraph):
                 self.vertices[vertex]["base"].set_color(self.visual_config["vertex_color"])
                 self.vertices[vertex]["base"].submobjects[0].set_color(self.visual_config["vertex_text_color"])
 
-        self.remove(*self.vertices)
+        self.remove(*self.vertices.values())
         self.add(*self.vertices.values())
 
     def _arrow_from(self, edge: LabeledLine | CurvedArrow) -> None:
@@ -625,10 +534,20 @@ class FiniteAutomaton(DiGraph):
         """
         for (u, v), edge in graph.edges.items():
             if u != v:
+                if (v, u) in graph.edges:
+                    # We need to offset two edges between the same vertices
+                    vec1 = self[v].get_center() - self[u].get_center()
+                    vec2 = np.cross(vec1, np.array([0, 0, 1]))
+
+                    length = np.linalg.norm(vec2)
+                    offset = 0.1 * vec2 / length  # TODO: Make configurable?
+                else:
+                    offset = np.array([0, 0, 0])
+
                 tip = edge.pop_tips()[0]
                 edge.set_points_by_ends(
-                    graph[u]["base"].get_center(),
-                    graph[v]["base"].get_center(),
+                    graph[u]["base"].get_center() + np.dot(offset, np.array([1, 0, 0])),
+                    graph[v]["base"].get_center() + np.dot(offset, np.array([0, 1, 0])),
                     buff=self.visual_config["vertex_radius"],
                     path_arc=0
                 )
@@ -653,7 +572,7 @@ class FiniteAutomaton(DiGraph):
 
         return Succession(
             ApplyWave(self.edges[(start, end)]),
-            Indicate(self.vertices[end])
+            Indicate(self.vertices[end]["base"])
         )
 
 

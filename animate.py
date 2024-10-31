@@ -31,6 +31,6 @@ if __name__ == "__main__":
         print("Usage: py animate.py <fa_filename> <config_filename> <input_string>")
         exit(1)
 
-    with tempconfig({"quality": "low_quality", "preview": True}):
+    with tempconfig({"quality": "high_quality", "preview": True}):
         scene = SceneToShow(sys.argv[1], sys.argv[2], sys.argv[3])
         scene.render()

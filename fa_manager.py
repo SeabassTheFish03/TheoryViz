@@ -1,6 +1,11 @@
 from automata.fa.dfa import DFA
 
-from finite_automaton import FiniteAutomaton
+import numpy as np
+
+from manim.mobject.types.vectorized_mobject import VDict
+from manim.animation.composition import Succession, AnimationGroup
+
+from finite_automaton import FiniteAutomaton, ProcessText
 
 
 class DFA_Manager:
@@ -11,8 +16,14 @@ class DFA_Manager:
         config: dict = dict(),
         input_string: str = ""
     ) -> None:
-        self.auto = auto
-        self.mobj = mobj
+        self.auto: DFA = auto
+        self.mobj: VDict = VDict({
+            "dfa": mobj,
+            "text": ProcessText(input_string),
+        })
+
+        self.mobj["dfa"].move_to([0, 0, 0])
+        self.mobj["text"].next_to(self.mobj["dfa"], np.array([0, 1, 0]))
 
         self.current_state = self.auto.initial_state
         self.input_string = input_string
@@ -26,7 +37,11 @@ class DFA_Manager:
 
         for start, symbols in transitions.items():
             for symbol, end in symbols.items():
-                edges[(start, end)] = {"label": symbol}
+                if (start, end) in edges:
+                    # An edge already exists, but with a different symbol
+                    edges[(start, end)]["label"] += f", {symbol}"
+                else:
+                    edges[(start, end)] = {"label": symbol}
 
         return edges
 
@@ -67,6 +82,12 @@ class DFA_Manager:
             "edges": edges_with_options
         }
 
+        mobj_options["vertices"][json_object["initial_state"]]["flags"].append("i")
+        mobj_options["vertices"][json_object["initial_state"]]["flags"].append("c")
+
+        for state in json_object["final_states"]:
+            mobj_options["vertices"][state]["flags"].append("f")
+
         mobj = FiniteAutomaton(
             vertices=json_object["states"],
             edges=edges_with_options.keys(),
@@ -75,6 +96,25 @@ class DFA_Manager:
         )
 
         return cls(auto, mobj, config, input_string)
+
+    def animate(self) -> Succession:
+        sequence = []
+        for _ in self.input_string:
+            next_state = self.dfa._get_next_current_state(self.current_state, self.mobj["text"].peek_next_letter())
+            sequence.append(
+                AnimationGroup(
+                    self.mobj["text"].RemoveOneCharacter(),
+                    self.mobj["dfa"].transition_animation(self.current_state, next_state)
+                )
+            )
+            self.mobj["dfa"].remove_flag(self.current_state, "c")
+            self.mobj["text"].increment_letter()
+            self.mobj["dfa"].add_flag(next_state, "c")
+
+            self.current_state = next_state
+            print(self.mobj["dfa"]["3"].color)
+
+        return Succession(*sequence)
 
 
 class NFA_Manager:

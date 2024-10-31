@@ -6,7 +6,13 @@ Because the bigconfig is meant to be all-encompassing, and we prefer not to use 
 # Formatting of the FAs at Each Step of the Process
 Through different parts of the rendering process, the FAs are represented in different ways, depending on their use. This section goes into detail on what those different configurations look like.
 ## JSON
-The FA begins its life in the JSON file. In this representation,
+The FA begins its life in the JSON file. In this representation, we can feed it directly into `automata-lib` and it can create its own internal representation. From here, it gets translated into an FA_Manager
+## FA_Manager
+There are different implementations pertaining to each different type of FA, but they all exist to wrap the `automata-lib` object along with the `mobject` representation of it. The manager is used to synchronize the internal states of both of these complicated objects and provide the user with an easy interface to interact with them.
+### Mobject
+The `mobject` representation itself has a few different components. The most obvious is the "ball and stick" diagram of the automaton itself. There are also `mobjects` for the string being process (which is updated internally to keep up with the transitions) and a transition table (which highlights itself in sync with the computation). These can be enabled/disabled depending on the user's preference.
+### Automata-lib
+`automata-lib` has its own implementation of automata internally. As the animation is rendering, the automaton stored within is also updating, which allows us to utilize the calculation algorithms built into `automata-lib` to calculate the next move.
 
 # On AI
 At the time of writing, generative AI, particularly LLMs, struggle to generate specific and complete JSON representations of DFAs. In our experience, they tend to miss important transitions and generate states that don't quite make sense. While AI is a great starting point, we suggest proofreading any outputs before inputting them into the system for best results.

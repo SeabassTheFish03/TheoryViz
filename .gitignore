@@ -3,3 +3,6 @@ media
 Lib
 Scripts
 render.sh
+render_demo.sh
+render.bat
+render_demo.bat

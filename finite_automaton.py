@@ -11,8 +11,9 @@ import numpy as np
 
 # Manim
 from manim.animation.indication import ApplyWave, Indicate
-from manim.animation.composition import Succession
+from manim.animation.composition import Succession, AnimationGroup
 from manim.animation.creation import Unwrite
+from manim.animation.transform import FadeToColor
 from manim.mobject.graph import DiGraph
 from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
@@ -21,6 +22,9 @@ from manim.mobject.geometry.shape_matchers import BackgroundRectangle, Surroundi
 from manim.mobject.text.tex_mobject import MathTex
 from manim.mobject.text.text_mobject import Text
 from manim.mobject.types.vectorized_mobject import VGroup, VDict
+
+# Internal
+from animations import ApplyReverseWave
 
 
 def unit_vector(vector):
@@ -570,8 +574,14 @@ class FiniteAutomaton(DiGraph):
     def transition_animation(self, start: LabeledDot, end: LabeledDot) -> Succession:
         assert (start, end) in self.edges, f"Transition does not exist: {(start, end)}"
 
+        if start != end:
+            wiggle_vector = np.cross(self.edges[(start, end)].get_unit_vector(), np.array([0, 0, 1]))
+        else:
+            # Self-loop requires different vector calculation
+            wiggle_vector = np.array([1, 0, 0])
+
         return Succession(
-            ApplyWave(self.edges[(start, end)]),
+            ApplyReverseWave(self.edges[(start, end)], direction=wiggle_vector),
             Indicate(self.vertices[end]["base"])
         )
 
@@ -591,5 +601,11 @@ class ProcessText(Text):
     def increment_letter(self) -> None:
         self.textptr += 1
 
-    def RemoveOneCharacter(self) -> Unwrite:
-        return Unwrite(self[self.textptr])
+    def RemoveOneCharacter(self):
+        if self.textptr < len(self.original_text) - 1:
+            return AnimationGroup(
+                FadeToColor(self[self.textptr + 1], color="yellow"),
+                Unwrite(self[self.textptr])
+            )
+        else:
+            return Unwrite(self[self.textptr])

@@ -20,10 +20,14 @@ class DFA_Manager:
         self.mobj: VDict = VDict({
             "dfa": mobj,
             "text": ProcessText(input_string),
+            "shadow": ProcessText(input_string, color=0x333333)
         })
 
         self.mobj["dfa"].move_to([0, 0, 0])
         self.mobj["text"].next_to(self.mobj["dfa"], np.array([0, 1, 0]))
+        self.mobj["shadow"].next_to(self.mobj["text"], np.array([0, 0, -1]))
+
+        self.mobj["text"][0].set_color("yellow")  # TODO: Make configurable
 
         self.current_state = self.auto.initial_state
         self.input_string = input_string
@@ -112,7 +116,6 @@ class DFA_Manager:
             self.mobj["dfa"].add_flag(next_state, "c")
 
             self.current_state = next_state
-            print(self.mobj["dfa"]["3"].color)
 
         return Succession(*sequence)
 

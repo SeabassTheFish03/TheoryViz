@@ -1,11 +1,21 @@
-from automata.fa.dfa import DFA
+# Standard Library
+import json
 
+# Libraries
 import numpy as np
+
+# Dependencies
+from automata.fa.dfa import DFA
+from automata.tm.dtm import DTM
 
 from manim.mobject.types.vectorized_mobject import VDict
 from manim.animation.composition import Succession, AnimationGroup
 
-from finite_automaton import FiniteAutomaton, ProcessText
+from jsonschema import validate
+
+# Internal
+from finite_automaton import FiniteAutomaton
+from text_visuals import ProcessText, TuringTape
 
 
 class DFA_Manager:
@@ -20,12 +30,10 @@ class DFA_Manager:
         self.mobj: VDict = VDict({
             "dfa": mobj,
             "text": ProcessText(input_string),
-            "shadow": ProcessText(input_string, color=0x333333)
         })
 
         self.mobj["dfa"].move_to([0, 0, 0])
         self.mobj["text"].next_to(self.mobj["dfa"], np.array([0, 1, 0]))
-        self.mobj["shadow"].next_to(self.mobj["text"], np.array([0, 0, -1]))
 
         self.mobj["text"][0].set_color("yellow")  # TODO: Make configurable
 
@@ -51,17 +59,8 @@ class DFA_Manager:
 
     @classmethod
     def from_json(cls, json_object: dict, config: dict = dict(), input_string: str = ""):
-        if not isinstance(json_object, dict):
-            raise TypeError(f"json_object must be dict, not {type(json_object)}")
-        if not isinstance(input_string, str):
-            raise TypeError(f"input_string must be str, not {type(input_string)}")
-        if not isinstance(config, dict):
-            raise TypeError(f"config must be a dict, not {type(config)}")
-
-        if "type" not in json_object:
-            raise Exception("Type not specified in json_object. Must be dfa")
-        if json_object["type"].lower() != "dfa":
-            raise Exception(f"Specified type in json must be dfa, not {json_object[type]}")
+        # Throws on failure
+        cls.validate_json(json_object)
 
         allow_partial = json_object.get("allow_partial", False)
 
@@ -101,6 +100,33 @@ class DFA_Manager:
 
         return cls(auto, mobj, config, input_string)
 
+    @classmethod
+    def validate_json(cls, json_object: dict) -> None:
+        """
+        Ensures the json fed to the from_json() function conforms to all the
+        requirements of a DFA
+
+        On success, returns None. On failure, throws.
+        """
+        # Validate json format using jsonschema library
+        with open("./schema/dfa.schema.json", "rb") as f:
+            schema = json.load(f)
+        validate(
+            instance=json_object,
+            schema=schema
+        )
+
+        # Validate the transitions
+        allow_partial = json_object.get("allow_partial", False)
+        for state in json_object["states"]:
+            if state not in json_object["transitions"]:
+                raise AttributeError(f"State {state} not listed in transition table")
+            for symbol in json_object["input_symbols"]:
+                if (symbol not in json_object["transitions"][state]) and (not allow_partial):
+                    raise AttributeError(f"Transition using \"{symbol}\" missing from state {state}")
+                if (end := json_object["transitions"][state][symbol]) not in json_object["states"]:
+                    raise AttributeError(f"Destination {end} not in states list")
+
     def animate(self) -> Succession:
         sequence = []
         for _ in self.input_string:
@@ -129,4 +155,14 @@ class PDA_Manager:
 
 
 class TM_Manager:
-    pass
+    def __init__(
+        self,
+        auto: DTM,
+        mobj: FiniteAutomaton,
+        config: dict = dict(),
+        initial_tape: str = ""
+    ):
+        self.mobj = VDict({
+            "tm": mobj,
+            "text": TuringTape
+        })

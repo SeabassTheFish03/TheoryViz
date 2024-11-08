@@ -1,0 +1,31 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "./schema/dfa.schema.json",
+	"title": "DFA",
+	"type": "object",
+	"properties": {
+		"fa_type": {"const": "dfa"},
+		"states": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"input_symbols": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"transitions": {"type": "object"},
+		"initial_state": {"type": "string"},
+		"final_states": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"allow_partial": {"type": "boolean"}
+	},
+	"required": ["fa_type", "states", "input_symbols", "transitions", "initial_state", "final_states"]
+}

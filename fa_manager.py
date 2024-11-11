@@ -29,13 +29,11 @@ class DFA_Manager:
         self.auto: DFA = auto
         self.mobj: VDict = VDict({
             "dfa": mobj,
-            "text": ProcessText(input_string),
+            "text": ProcessText(input_string, highlight_color=config["current_state_color"]),
         })
 
         self.mobj["dfa"].move_to([0, 0, 0])
         self.mobj["text"].next_to(self.mobj["dfa"], np.array([0, 1, 0]))
-
-        self.mobj["text"][0].set_color("yellow")  # TODO: Make configurable
 
         self.current_state = self.auto.initial_state
         self.input_string = input_string

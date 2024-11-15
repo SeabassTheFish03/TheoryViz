@@ -9,7 +9,7 @@ from fa_manager import DFA_Manager
 
 
 class SceneToShow(Scene):
-    def __init__(self, fa_filename, config_filename):
+    def __init__(self, fa_filename, config_filename, in_string):
         super().__init__()
 
         with open(fa_filename, "rb") as f:
@@ -17,7 +17,7 @@ class SceneToShow(Scene):
         with open(config_filename, "rb") as f:
             self.config = tomllib.load(f)
 
-        self.fa = DFA_Manager.from_json(fa_json, config=self.config)
+        self.fa = DFA_Manager.from_json(fa_json, config=self.config, input_string=in_string)
 
     def construct(self):
         self.camera.background_color = self.config["background_color"]
@@ -25,10 +25,10 @@ class SceneToShow(Scene):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: py display.py <fa_filename> <config_filename>")
+    if len(sys.argv) != 4:
+        print("Usage: py display.py <fa_filename> <config_filename> <input_string>")
         exit(1)
 
     with tempconfig({"quality": "high_quality", "preview": True}):
-        scene = SceneToShow(sys.argv[1], sys.argv[2])
+        scene = SceneToShow(sys.argv[1], sys.argv[2], sys.argv[3])
         scene.render()

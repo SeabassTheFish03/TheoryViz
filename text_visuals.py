@@ -3,6 +3,7 @@ __all__ = [
     "TuringTape"
 ]
 
+from manim.animation.animation import Animation
 from manim.animation.composition import AnimationGroup
 from manim.animation.creation import Unwrite
 from manim.animation.transform import FadeToColor
@@ -21,11 +22,12 @@ class ProcessText(Text):
     def __init__(
         self,
         text: str,
+        text_color: ManimColor = "white",
         highlight_color: ManimColor = "yellow",
         shadow_color: ManimColor = "dark_grey",
         **kwargs
     ) -> None:
-        super().__init__(text, **kwargs)
+        super().__init__(text, color=text_color, **kwargs)
 
         if ' ' in text:
             print("Warning: Whitespace does not translate well to this Mobject. Consider replacing with a different character, like _ (underscore)")
@@ -34,7 +36,7 @@ class ProcessText(Text):
         self[0].set_color(highlight_color)
 
         # The shadow that's left behind after the unwrites
-        self.add(Text(text, color=shadow_color))
+        self.add(Text(text, color=shadow_color).set_z_index(-1))
 
     def peek_next_letter(self) -> str:
         return self.original_text[self.textptr]
@@ -87,14 +89,18 @@ class TuringTape:
                 },
                 include_outer_lines=True
             ),
-            "indicator": self.mobj["table"].get_cell(
-                (1, (self.index + 1) % len(self.text)),
-                color=config["current_state_color"]
-            )
+            "indicator": VGroup()
         })
-        self.mobj["indicator"].add_updater(self.update_mobj)
+        self.mobj["indicator"] = self.mobj["table"].get_cell(
+            (1, (self.index + 1) % len(self.text)),
+            color=config["current_state_color"]
+        )
 
-    def update_indicator(self, ctx):
-        ctx.move_to(self.mobj["table"].get_cell(
+    def animate_change_highlighted(self, new_index: int) -> Animation:
+        if new_index >= len(self.text):
+            raise ValueError(f"Index {new_index} out of range for text {self.text}")
 
-        ))
+        self.index = new_index
+        return self.mobj["indicator"].animate.move_to(
+            self.mobj["table"].get_cell((1, new_index + 1))
+        )

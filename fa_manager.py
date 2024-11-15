@@ -1,15 +1,13 @@
 # Standard Library
 import json
 
-# Libraries
-import numpy as np
-
 # Dependencies
 from automata.fa.dfa import DFA
 from automata.tm.dtm import DTM
 
 from manim.mobject.types.vectorized_mobject import VDict
 from manim.animation.composition import Succession, AnimationGroup
+from manim.constants import UP
 
 from jsonschema import validate
 
@@ -29,11 +27,11 @@ class DFA_Manager:
         self.auto: DFA = auto
         self.mobj: VDict = VDict({
             "dfa": mobj,
-            "text": ProcessText(input_string, highlight_color=config["current_state_color"]),
+            "text": ProcessText(input_string, text_color=config["vertex_color"], highlight_color=config["current_state_color"], shadow_color=config["text_shadow_color"]),
         })
 
         self.mobj["dfa"].move_to([0, 0, 0])
-        self.mobj["text"].next_to(self.mobj["dfa"], np.array([0, 1, 0]))
+        self.mobj["text"].next_to(self.mobj["dfa"], UP)
 
         self.current_state = self.auto.initial_state
         self.input_string = input_string
@@ -160,7 +158,17 @@ class TM_Manager:
         config: dict = dict(),
         initial_tape: str = ""
     ):
+        self.auto: DTM = auto
         self.mobj = VDict({
             "tm": mobj,
-            "text": TuringTape
+            "text": TuringTape(initial_tape, "_", config)
         })
+
+        self.mobj["tm"].move_to([0, 0, 0])
+        self.mobj["text"].next_to(self.mobj["tm"], UP)
+
+        self.current_state = self.auto.initial_state
+        self.initial_tape = initial_tape
+
+        # A little aliasing
+        self.dfa = self.auto

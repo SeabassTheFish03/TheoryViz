@@ -489,7 +489,7 @@ class FiniteAutomaton(DiGraph):
                 start_arrow: Arrow = Arrow(
                     start=fake_start,
                     end=ray * 1,
-                    fill_color=self.visual_config["vertex_color"],
+                    color=self.visual_config["vertex_color"],
                     stroke_width=5
                 )
                 self.vertices[vertex]["accessories"].add(start_arrow)

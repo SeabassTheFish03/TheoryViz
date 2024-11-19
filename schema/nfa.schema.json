@@ -1,10 +1,10 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "./schema/dfa.schema.json",
-	"title": "DFA", 
+	"$id": "./schema/nfa.schema.json",
+	"title": "NFA", 
 	"type": "object",
 	"properties": {
-		"fa_type": {"const": "dfa"},
+		"fa_type": {"const": "nfa"},
 		"states": {
 			"type": "array",
 			"items": {"type": "string"},

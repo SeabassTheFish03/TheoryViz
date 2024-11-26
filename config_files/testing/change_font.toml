@@ -14,6 +14,7 @@ current_state_color = "yellow"
 final_state_color = "white"
 initial_state_color = "white"
 transition_color = "yellow"
+text_shadow_color = "white"
 font = "Comic Sans"
 
 # Geometry Config

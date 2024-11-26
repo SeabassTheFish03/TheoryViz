@@ -2,4 +2,8 @@ badtoml.toml: toml interpreter catches the error - incorrect formatting (two occ
 
 change_font.toml: attempted to change font - should result in "poor design error"
 
-double_key.toml: double defined background_color
+double_key.toml: double defined background_color ... TBD - should cause error - double definitions
+
+unfamiliarkey.toml: should cause an error, unidentified value
+
+works.toml: should run with given values

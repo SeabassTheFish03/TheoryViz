@@ -1,0 +1,31 @@
+# The general config file for TheoryViz
+
+# Geometry colors
+background_color = "black"
+vertex_color = "white"
+vertex_text_color = "black"
+vertex_stroke_color = "white"
+edge_color = "white"
+edge_text_color = "white"
+table_border_color = "white"
+
+# Theory Colors
+current_state_color = "yellow"
+final_state_color = "white"
+initial_state_color = "white"
+transition_color = "yellow"
+background_color = "green"
+
+# Geometry Config
+vertex_radius = 0.3
+layout_scale = 2
+layout_type = "kamada_kawai"
+font_size = 40
+edge_label_position = 0.5 # Must be [0,1], how far along the line is label?
+edge_label_frame = true # Should edge label have a frame?
+edge_label_frame_fill = "black"
+edge_label_frame_opacity = 1 # [0,1]
+
+# Theory Config
+show_initial_state_arrow = true
+show_final_state_annulus = true

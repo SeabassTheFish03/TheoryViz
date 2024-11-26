@@ -1,0 +1,5 @@
+badtoml.toml: toml interpreter catches the error - incorrect formatting (two occastions marked in the file)
+
+change_font.toml: attempted to change font - should result in "poor design error"
+
+double_key.toml: double defined background_color

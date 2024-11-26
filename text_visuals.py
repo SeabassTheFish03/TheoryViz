@@ -96,11 +96,14 @@ class TuringTape:
             color=config["current_state_color"]
         )
 
-    def animate_change_highlighted(self, new_index: int) -> Animation:
-        if new_index >= len(self.text):
-            raise ValueError(f"Index {new_index} out of range for text {self.text}")
+    def animate_update(self, direction):
+        if direction == "left":
+            self.index -= 1 if self.index > 0 else 0
+        elif direction == "right":
+            self.index += 1 if self.index < len(self.text) - 1 else 0
+        else:
+            raise ValueError("Direction invalid")
 
-        self.index = new_index
         return self.mobj["indicator"].animate.move_to(
-            self.mobj["table"].get_cell((1, new_index + 1))
+            self.mobj["table"].get_cell((1, (self.index + 1) % len(self.text)))
         )

@@ -1,5 +1,5 @@
 {
-	"type": "tm",
+	"fa_type": "tm",
     "states": ["1", "2", "3"],
     "tape_symbols": ["a", "b", "c"],
     "transitions": {

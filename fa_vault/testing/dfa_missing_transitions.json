@@ -1,5 +1,5 @@
 {
-	"type": "dfa",
+	"fa_type": "dfa",
 	"states": ["1", "2", "3", "4", "5"],
 	"input_symbols": ["a", "b", "c"],
 	"transitions": {

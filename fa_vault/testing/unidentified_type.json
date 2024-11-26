@@ -1,5 +1,5 @@
 {
-	"type": "newtype",
+	"fa_type": "newtype",
 	"states": ["1", "2", "3", "4", "5"],
 	"input_symbols": ["a", "b", "c"],
 	"transitions": {

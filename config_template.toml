@@ -8,7 +8,7 @@ vertex_stroke_color = "white"
 edge_color = "white"
 edge_text_color = "white"
 table_border_color = "white"
-text_shadow_color = "dark grey"
+text_shadow_color = "gray"
 
 # Theory Colors
 current_state_color = "yellow"

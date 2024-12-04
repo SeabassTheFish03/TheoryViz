@@ -2,48 +2,48 @@ automaton_no_states.json: should run but put up blank screen
 
 dfa_15_states.json: produce 15 state dfa. transitions clear and readable and nothing overlapping
 
-dfa_15+5_max.json:
+dfa_15+5_max.json: produce 15 state dfa according to static representation criteria
 
-dfa_double_transitions.json
+dfa_double_transitions.json: error - dfas cannot have ambiguous transitions
 
-dfa_epsilon_transition.json
+dfa_epsilon_transition.json: error - dfas do not support epsilon transitions
 
-dfa_false_start_states.json
+dfa_false_start_states.json: error - start state does not exist in this dfa
 
-dfa_five_input_characters.json
+dfa_five_input_characters.json: success - produce dfa in accordance with static representation criteria
 
-dfa_incomplete_transition.json
+dfa_incomplete_transition.json: error - all transitions must be fully defined
 
-dfa_missing_transitions.json
+dfa_missing_transitions.json: error - must include all transitions for all states
 
-dfa_missing_transitionsfield.json
+dfa_missing_transitionsfield.json: error - missing transitions field - total formatting error
 
-dfa_no_final_states.json
+dfa_no_final_states.json: error - no final state defined
 
-dfa_no_input_symbols.json
+dfa_no_input_symbols.json: error - no input symbols defined
 
-dfa_non-defined_input_symbol.json
+dfa_non-defined_input_symbol.json: error with transitions - non-defined input symbol
 
-dfa_one_state.json
+dfa_one_state.json: success - display one state dfa, all self trasnitions
 
-dfa_six_input_characters.json
+dfa_six_input_characters.json: error - too many input characters, maximum number of input characters is five
 
-dfa_two_start_states.json
+dfa_two_start_states.json: error - only one start state may be defined
 
-jsonformaterror.json
+jsonformaterror.json: JSON error - missing bracket / formatting error
 
-missing_type.json
+missing_type.json: error - no type defined
 
-tm_double_Transition.json
+tm_double_Transition.json: error - double definition of a transition. Turing machines in this code are deterministic and cannot have double defined transitions
 
-tm_epsilon_transition.json
+tm_epsilon_transition.json: error - epsilon transition. Turing Machines in TheoryViz are deterministic
 
-tm_incomplete_transition.json
+tm_incomplete_transition.json: error - all transitions must be fully defined
 
-tm_missingTransition.json
+tm_missingTransition.json: error - missing transition field
 
-tm_testing.json
+tm_testing.json: success
 
-unidentified_type.json
+unidentified_type.json: error - type of automata undefined
 
-unsupported_automata.json
+unsupported_automata.json: error - pdas are not supported yet by TheoryViz

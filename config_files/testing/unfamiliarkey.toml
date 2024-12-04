@@ -9,6 +9,7 @@ edge_color = "white"
 edge_text_color = "white"
 table_border_color = "white"
 edge_radius = 2
+whatIsThis = hello
 
 # Theory Colors
 current_state_color = "yellow"

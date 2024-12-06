@@ -1,6 +1,5 @@
 __all__ = {
-    "FiniteAutomaton",
-    "ProcessText"
+    "FiniteAutomaton"
 }
 
 # Standard Lib
@@ -423,7 +422,7 @@ class FiniteAutomaton(DiGraph):
                 edge_label = labels.get((u, u), str((u, u)))
 
                 this_edge_config = deepcopy(general_edge_config)
-                this_edge_config.update(specific_edge_config.get((u, v), dict()))
+                this_edge_config.update(specific_edge_config.get((u, u), dict()))
 
                 between = angle_between(self[u].get_center() - self.vcenter(), np.array([1, 0, 0]))
                 if self[u].get_center()[1] < self.vcenter()[1]:

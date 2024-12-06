@@ -6,8 +6,10 @@ __all__ = [
 from manim.animation.animation import Animation
 from manim.animation.composition import AnimationGroup
 from manim.animation.creation import Unwrite
-from manim.animation.transform import FadeToColor
+from manim.animation.transform import FadeToColor, Transform
+from manim.mobject.geometry.polygram import Rectangle
 from manim.mobject.table import Table
+from manim.mobject.text.tex_mobject import MathTex
 from manim.mobject.text.text_mobject import Text
 from manim.mobject.types.vectorized_mobject import VGroup, VDict
 from manim.utils.color.core import ManimColor
@@ -79,7 +81,7 @@ class TuringTape:
 
         self.mobj = VDict({
             "table": Table(
-                [list(text)],
+                [(list(text) + [self.blank])],
                 element_to_mobject=Text,
                 element_to_mobject_config={
                     "color": config["edge_text_color"]
@@ -89,21 +91,42 @@ class TuringTape:
                 },
                 include_outer_lines=True
             ),
-            "indicator": VGroup()
+            "indicator": VGroup(),
+            "end_cover": VGroup()
         })
         self.mobj["indicator"] = self.mobj["table"].get_cell(
             (1, (self.index + 1) % len(self.text)),
             color=config["current_state_color"]
         )
 
-    def animate_update(self, direction):
-        if direction == "left":
-            self.index -= 1 if self.index > 0 else 0
-        elif direction == "right":
-            self.index += 1 if self.index < len(self.text) - 1 else 0
-        else:
-            raise ValueError("Direction invalid")
+        # WIP
+        left_end = Rectangle().move_to(self.mobj["table"].get_cell((1, 1)))
 
-        return self.mobj["indicator"].animate.move_to(
-            self.mobj["table"].get_cell((1, (self.index + 1) % len(self.text)))
+    def animate_change_highlighted(self, write, new_index: int) -> Animation:
+        if new_index >= len(self.text):
+            raise ValueError(f"Index {new_index} out of range for text {self.text}")
+
+        current_entry = self.mobj["table"].get_entries(pos=(1, self.index + 1))
+        target_mobj = MathTex(write).move_to(current_entry)
+
+        self.index = new_index
+        return AnimationGroup(
+            self.mobj["indicator"].animate.move_to(
+                self.mobj["table"].get_cell((1, new_index + 1))
+            ),
+            Transform(current_entry, target_mobj)
         )
+
+    def animate_left(self, write):
+        return self.animate_change_highlighted(write, max(self.index - 1, 0))
+
+    def animate_right(self, write):
+        return self.animate_change_highlighted(write, min(self.index + 1, len(self.text) - 1))
+
+    def animate_move(self, write, direction):
+        if direction == "L":
+            return self.animate_left(write)
+        elif direction == "R":
+            return self.animate_right(write)
+        else:
+            raise ValueError(f"Direction {direction} not recognized")

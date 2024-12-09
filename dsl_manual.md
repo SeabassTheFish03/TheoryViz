@@ -96,6 +96,8 @@ The animation will stop and remain stopped for n seconds. After n seconds, the a
 The object indicated at `<obj_name>` does not exist at the time of calling. If there is no active animation or object that could be paused, it raises a DoesNotExist error.
 ### Malformed Command
 If the number of arguments is incorrect or if <n> is not a valid number--i.e. negative--it throws a MalformedCommand error.
+### No Play Called
+If no play or animate command has been previously called when pause is called, an exception is thrown.
 
 # Play
 Usage: 'PLAY'
@@ -105,4 +107,5 @@ Resumes or starts the animation from its current state.
 The animation continues from its paused state.
 
 ## Errors
+### No Pause Called
 If no PAUSE had been previously called, then PLAY will raise an exception

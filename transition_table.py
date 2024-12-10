@@ -88,7 +88,7 @@ class AnimateTransitionTable(DisplayTransitionTable):
                 current_state = next_state
             else: break
 
-        self.play(Create(self.table))
+        self.add(self.table) # self.play(Create(self.table)) - just materializes, not creates
 
         state_index = list(self.rawJson["states"]).index(self.rawJson["initial_state"]) + 2
         # have to have input string
@@ -98,7 +98,9 @@ class AnimateTransitionTable(DisplayTransitionTable):
 
         substring = self.input_string
         floater = Tex(substring, color=BLACK, fill_color=YELLOW)
+        floater.to_edge(UP)
         self.add(floater)
+        #dig into manim. scene.py
 
         current_state = self.rawJson["initial_state"]
         next_state = self.rawJson["transitions"][current_state][self.input_string[0]]
@@ -122,7 +124,9 @@ class AnimateTransitionTable(DisplayTransitionTable):
                 self.play(
                     Transform(follower, new_follower),
                     # Create(path),
-                    Transform(floater, Tex(str(substring), color=BLACK, fill_color=YELLOW)),
+                    #floater.to_edge(UP),
+                    #Transform(floater, Tex(str(substring), color=BLACK, fill_color=YELLOW)),
+                    
                     #this is where the text is coming from - how to make it go up top and not disappear. Check Sebastians code.
                     # MoveAlongPath(floater, path),
                 )

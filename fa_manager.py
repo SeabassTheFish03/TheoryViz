@@ -5,6 +5,7 @@ import json
 from automata.fa.dfa import DFA
 from automata.tm.dtm import DTM
 from automata.tm.configuration import TMConfiguration
+from automata.tm.tape import TMTape
 
 from manim.mobject.types.vectorized_mobject import VDict
 from manim.animation.composition import Succession, AnimationGroup
@@ -166,20 +167,20 @@ class TM_Manager:
         maxiter: int = 1000
     ):
         self.auto: DTM = auto
-        self.mobj = VDict({
-            "tm": mobj,
-            "text": TuringTape(initial_tape, "_", config)
-        })
+
+        self.mobj = VDict()
+        self.mobj["tm"] = mobj
+        self.mobj["text"] = TuringTape(initial_tape, "_", config)
 
         self.mobj["tm"].move_to([0, 0, 0])
-        self.mobj["text"].next_to(self.mobj["tm"], UP)
+        self.mobj["text"].next_to(self.mobj["tm"], 0.5 * UP).scale(0.5)
 
         self.current_state = self.auto.initial_state
         self.initial_tape = initial_tape
         self.maxiter = maxiter
 
         # A little aliasing
-        self.dfa = self.auto
+        self.tm = self.auto
 
     @classmethod
     def _json_to_mobj_edges(cls, transitions: dict) -> dict:
@@ -191,10 +192,10 @@ class TM_Manager:
                 write = action[1]
                 move = action[2]
 
-                label = f"{symbol} \\to {write},\\ {move}"  # LaTeX format
+                label = f"${symbol} \\to {write},\\ {move}$"  # LaTeX format
                 if (start, end) in edges:
                     # An edge already exists, but with a different symbol
-                    edges[(start, end)]["label"] += f"\n{label}"
+                    edges[(start, end)]["label"] += f"\\\\{label}"
                 else:
                     edges[(start, end)] = {"label": label}
 
@@ -282,24 +283,37 @@ class TM_Manager:
     def animate(self):
         sequence = []
 
-        current_config = TMConfiguration(self.tm.initial_state, self.initial_tape)
-        for tm_config in self.tm.read_input_stepwise(self.initial_tape):
+        current_config = TMConfiguration(
+            self.tm.initial_state,
+            TMTape(self.initial_tape, self.tm.blank_symbol, 0)
+        )
+
+        generator = self.tm.read_input_stepwise(self.initial_tape)
+        generator.__next__()  # Get the next state ready
+
+        for tm_config in generator:
             # tm_config is a TMConfiguration object from automata-lib
 
-            write = self.tm.transitions[current_config.state][current_config.tape.read_symbol()][1]
-            direction = self.tm.transitions[current_config.state][current_config.tape.read_symbol()][2]
+            changes = self.tm.transitions[current_config.state][current_config.tape.read_symbol()]
+            write = changes[1]
+            direction = changes[2]
 
-            mobj_curr_state = self.mobj["tm"][str(current_config.state)]
-            mobj_next_state = self.mobj["tm"][str(current_config.state)]
+            mobj_curr_state = str(current_config.state)
+            mobj_next_state = str(tm_config.state)
+
+            current_dot = self.mobj["tm"][mobj_curr_state]["base"]
+            next_dot = self.mobj["tm"][mobj_next_state]["base"]
 
             sequence.append(
                 AnimationGroup(
                     self.mobj["text"].animate_move(write, direction),
-                    self.mobj["tm"].transition_animation(mobj_curr_state, mobj_next_state)
+                    self.mobj["tm"].transition_animation(mobj_curr_state, mobj_next_state),
+                    current_dot.animate.set_fill("white"),
+                    current_dot.submobjects[0].animate.set_fill("black"),
+                    next_dot.animate.set_fill("yellow"),
+                    current_dot.submobjects[0].animate.set_fill("black")
                 )
             )
-            self.mobj["tm"].remove_flag(mobj_curr_state, "c")
-            self.mobj["tm"].add_flag(mobj_next_state, "c")
 
             current_config = tm_config
 

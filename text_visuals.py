@@ -68,7 +68,8 @@ class ProcessText(Text):
             return Unwrite(self[self.textptr])
 
 
-class TuringTape:
+# TODO: Make this a descendant of Table
+class TuringTape(Table):
     def __init__(
         self,
         text: str,
@@ -79,40 +80,38 @@ class TuringTape:
         self.blank = blank_char  # Character representing a blank space, not shown
         self.index = 0
 
-        self.mobj = VDict({
-            "table": Table(
-                [(list(text) + [self.blank])],
-                element_to_mobject=Text,
-                element_to_mobject_config={
-                    "color": config["edge_text_color"]
-                },
-                line_config={
-                    "color": config["table_border_color"]
-                },
-                include_outer_lines=True
-            ),
-            "indicator": VGroup(),
-            "end_cover": VGroup()
-        })
-        self.mobj["indicator"] = self.mobj["table"].get_cell(
+        super().__init__(
+            [(list(text) + [self.blank])],
+            element_to_mobject=Text,
+            element_to_mobject_config={
+                "color": config["edge_text_color"]
+            },
+            line_config={
+                "color": config["table_border_color"]
+            },
+            include_outer_lines=True
+        )
+
+        self.indicator = self.get_cell(
             (1, (self.index + 1) % len(self.text)),
             color=config["current_state_color"]
         )
+        self.add(self.indicator)
 
         # WIP
-        left_end = Rectangle().move_to(self.mobj["table"].get_cell((1, 1)))
+        left_end = Rectangle().move_to(self.get_cell((1, 1)))
 
     def animate_change_highlighted(self, write, new_index: int) -> Animation:
         if new_index >= len(self.text):
             raise ValueError(f"Index {new_index} out of range for text {self.text}")
 
-        current_entry = self.mobj["table"].get_entries(pos=(1, self.index + 1))
+        current_entry = self.get_entries(pos=(1, self.index + 1))
         target_mobj = MathTex(write).move_to(current_entry)
 
         self.index = new_index
         return AnimationGroup(
-            self.mobj["indicator"].animate.move_to(
-                self.mobj["table"].get_cell((1, new_index + 1))
+            self.indicator.animate.move_to(
+                self.get_cell((1, new_index + 1))
             ),
             Transform(current_entry, target_mobj)
         )

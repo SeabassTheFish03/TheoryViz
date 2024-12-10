@@ -16,7 +16,7 @@ from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
-from manim.mobject.text.tex_mobject import MathTex
+from manim.mobject.text.tex_mobject import Tex, MathTex
 from manim.mobject.types.vectorized_mobject import VGroup, VDict
 
 # Internal
@@ -319,7 +319,9 @@ class FiniteAutomaton(DiGraph):
 
                 edge_label = tmp_edge_conf[(u, v)].pop("label", "why??")
                 if edge_label == "":
-                    edge_label = "\\epsilon"
+                    edge_label = Tex("\\epsilon")
+                else:
+                    edge_label = Tex(edge_label)
                 self.edges[(u, v)] = LabeledLine(
                     label=edge_label,
                     start=self[u],
@@ -340,10 +342,10 @@ class FiniteAutomaton(DiGraph):
                     z_index=-1,
                     **tmp_edge_conf[(u, u)]
                 )
-                label_mobject = MathTex(
+                label_mobject = Tex(
                     edge_label,
                     fill_color="white",
-                    font_size=40,
+                    font_size=20,  # TODO: Magic number
                 ).move_to(loop.get_center()).shift(
                     np.array([0.5, 0, 0])
                 ).rotate(-1 * between)
@@ -411,7 +413,9 @@ class FiniteAutomaton(DiGraph):
 
                 # An empty label is different from one that doesn't exist
                 if edge_label == "":
-                    edge_label = "\\epsilon"
+                    edge_label = MathTex("\\epsilon")
+                else:
+                    edge_label = Tex(edge_label)
                 self.edges[(u, v)] = LabeledLine(
                     label=edge_label,
                     start=self[u],
@@ -435,10 +439,10 @@ class FiniteAutomaton(DiGraph):
                     z_index=-1,
                     color=this_edge_config["color"]
                 )
-                label_mobject = MathTex(
+                label_mobject = Tex(
                     edge_label,
                     fill_color=this_edge_config["label_color"],
-                    font_size=this_edge_config["font_size"],
+                    font_size=this_edge_config["font_size"] / 2,
                 ).move_to(loop.get_center()).shift(
                     np.array([0.5, 0, 0])
                 ).rotate(-1 * between)

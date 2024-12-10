@@ -19,8 +19,8 @@ transition_color = "yellow"
 # Geometry Config
 vertex_radius = 0.3
 layout_scale = 2
-layout_type = "kamada_kawai"
-font_size = 40
+layout_type = "circular"
+font_size = 30
 edge_label_position = 0.5 # Must be [0,1], how far along the line is label?
 edge_label_frame = true # Should edge label have a frame?
 edge_label_frame_fill = "black"

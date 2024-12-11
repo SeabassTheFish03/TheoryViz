@@ -1,10 +1,25 @@
 # Formatting of the DSL .viz file
 Below are the commands for the FSMIPR DSL
 
-# Load
-Usage: `LOAD <file_name> AS <obj_name>`
+| Command   | Purpose |
+| -------- | ------- |
+| LOAD | Loads a finite automaton (FA) from a file into memory.   |
+| SHOW | Displays an FA object in the frame.     |
+| MOVE    | Moves an FA object to a specified location.    |
+| SHIFT | Shifts an FA object by a specified offset.    |
+| ANIMATE | Creates an animation for the given command.   |
+| PAUSE    | Pauses the animation for a specified duration. |
+| PLAY    | Resumes or starts the animation from its current state.   |
 
-Reads the file specified and attempts to interpret the contents. Stores the resulting FA in the variable name specified.
+# Load
+
+Purpose: Reads the file specified and attempts to interpret the contents. Stores the resulting FA in the variable name specified.
+
+Syntax: `LOAD <file_name> AS <obj_name>`
+
+Parameters:
+- <file_name>: Path to a .txt or .json file specifying the FA structure.
+- <obj_name>: The variable name for the loaded FA.
 
 ## On Success
 If the FSMIPR can interpret the contents of the file (.txt or .json only), the program will respond with
@@ -13,20 +28,28 @@ The contents of the file must specify what type of FA it is (e.g. DFA, NFA, TM, 
 
 ## Errors
 ### Malformed Command
-If there is no `AS` keyword separating the filename and the variable name, the program will throw a MalformedCommand error
+Missing `AS` keyword separating the filename and the variable name. Example: LOAD dfa.json my_dfa.
+
 ### Type Not Specified
-A required field for the contents of the file is `type`, which specifies what type of FA is contained in the document. The list of acceptable FAs can be found in the "Acceptable FAs" section of this manual. If there is no `type` field, the program will throw a TypeNotSpecified error.
+Missing type field in the file. Ensure the FA type is declared. The list of acceptable FAs can be found in the "Acceptable FAs" section of this manual.
+
 ### Type Not Recognized
-If the `type` field is specified in the file, but is not one of the acceptable FAs contained in the "Acceptable FAs" section of this manual, the program will throw a TypeNotRecognized error.
+The type field specifies an unsupported FA type.
+
 ### Invalid Formatting
-Based on the type specified in the `type` field, the program will expect certain fields to be present. For the specific fields required for each type of FA, see the corresponding section for that FA in this manual. If any field cannot be interpreted or is not present, the program will throw an InvalidFormatting error. The error may go into more detail on where the formatting was incorrect, but this is not guaranteed.
+File contents do not meet the formatting requirements for the FA type. The error may go into more detail on where the formatting was incorrect, but this is not guaranteed.
+
 ### InvalidFA
 If the formatting of the file is correct and the program can parse each part of it, but there is some irreconcilable inconsistency contained within, the program will throw an InvalidFA error.
 
 # Show
-Usage: `SHOW <obj_name>`
 
-Shows the object indicated in the `<obj_name>` in the frame. If the object is already shown, does nothing.
+Purpose: Shows the object indicated in the `<obj_name>` in the frame. If the object is already shown, does nothing.
+
+Syntax: `SHOW <obj_name>`
+
+Parameters:
+- <obj_name>: The name of the FA object to display.
 
 ## On Success
 The object appears on the screen instantly.
@@ -34,14 +57,19 @@ If used during the SETUP phase, the object will be shown on screen at the start 
 
 ## Errors
 ### Does Not Exist
-The object indicated at `<obj_name>` does not exist at the time of calling. The interpreter will raise a KeyError in this case.
+The object indicated at `<obj_name>` does not exist at the time of execution. The interpreter will raise a KeyError in this case.
 ### Too Many Arguments
 The interpreter contains an assertion that the number of arguments is 2. If the assertion is false then an AssertionError will be raised with error text indicating this.
 
 # MOVE
-Usage: `MOVE <obj_name> TO <x, y>`
-
+Purpose:
 Moves the object indicated in the `<obj_name>` to the location indicated by `<x, y>`. If the object is already at the desired location, does nothing.
+
+Syntax: `MOVE <obj_name> TO <x, y>`
+
+Parameters:
+- <obj_name>: The name of the FA object to move.
+- <x, y>: The target coordinates.
 
 ## On Success
 The object's internal position is set to the specified coordinates. 
@@ -50,14 +78,18 @@ The object's internal position is set to the specified coordinates.
 ### Does Not Exist
 The object indicated at `<obj_name>` does not exist at the time of calling.
 ### Malformed Command
-Some part of the command does not match the expectations of the interpreter.
+Syntax does not match the expected structure.
 ### Malformed Coordinates
 The number of coordinates passed was not exactly equal to 2.
 
 # SHIFT
-Usage: `SHIFT <obj_name> BY <x, y>`
+Purpose: Shifts the object indicated in the `<obj_name>` by the offset indicated by `<x, y>`.
 
-Shifts the object indicated in the `<obj_name>` by the offset indicated by `<x, y>`.
+Syntax: `SHIFT <obj_name> BY <x, y>`
+
+Parameters:
+-<obj_name>: The name of the FA object to shift.
+- <x, y>: The offset values.
 
 ## On Success
 The object's internal position is shifted by the specified offest.
@@ -71,21 +103,33 @@ Some part of the command does not match the expectations of the interpreter.
 The number of coordinates passed was not exactly equal to 2.
 
 # Animate
-Usage: `ANIMATE <Command>`
-
+Purpose: 
 Animates the execution of the given command. Compatible with SHOW (uses the internal Manim `Create()`), MOVE, HIDE (uses the internal Manim `Uncreate()`)
 
-## On Success
+Syntax: `ANIMATE <Command>`
 
+Parameters:
+- <Command>: A supported command to be animated (e.g., SHOW, MOVE).
+
+## On Success
+Animates the given command with visual effects.
 
 
 ## Errors
 ### Does Not Exist
-The object indicated at `<obj_name>` does not exist at the time of calling.
+The object indicated at `<obj_name>` does not exist at the time of execution.
+
+### Unsupported Command
+The specified command cannot be animated. 
 
 # Pause
-Usage: `PAUSE <n>`
+Purpose: 
 Pauses the animation for `n` seconds.
+
+Syntax: `PAUSE <n>`
+
+Parameters:
+- <n>: Duration in seconds.
 
 ## On Success
 The animation will stop and remain stopped for n seconds. After n seconds, the animation will continue.
@@ -100,9 +144,11 @@ If the number of arguments is incorrect or if <n> is not a valid number--i.e. ne
 If no play or animate command has been previously called when pause is called, an exception is thrown.
 
 # Play
-Usage: 'PLAY'
-
+Purpose: 
 Resumes or starts the animation from its current state.
+
+Syntax: 'PLAY'
+
 ## On Success
 The animation continues from its paused state.
 

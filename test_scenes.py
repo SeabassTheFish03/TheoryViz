@@ -1,27 +1,28 @@
 # Standard Lib
 import tomllib
-import json
 from manim._config import tempconfig
 
 # Manim
 from manim.scene.scene import Scene
+from manim.animation.fading import FadeIn
 
 # TheoryViz
 from fa_manager import DFA_Manager
+from text_visuals import TuringTape
 
 
-class TestScene(Scene):
+class TMTapeTest(Scene):
     def construct(self):
-        with open("config.toml", "rb") as f:
+        with open("config_template.toml", "rb") as f:
             config = tomllib.load(f)
-        with open("fa_vault/sample_dfa.json", "rb") as f:
-            test_dfa = json.load(f)
 
-        test_automaton = DFA_Manager.from_json(test_dfa, config=config).mobj
-        self.add(test_automaton)
+        test_tape = TuringTape("abc", "_", config)
+
+        self.play(FadeIn(test_tape))
+        self.play(test_tape.animate_update("right"))
 
 
 if __name__ == "__main__":
     with tempconfig({"quality": "low_quality", "preview": True}):
-        scene = TestScene()
+        scene = TMTapeTest()
         scene.render()

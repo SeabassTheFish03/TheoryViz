@@ -1,6 +1,5 @@
 __all__ = {
-    "FiniteAutomaton",
-    "ProcessText"
+    "FiniteAutomaton"
 }
 
 # Standard Lib
@@ -10,17 +9,18 @@ from copy import deepcopy
 import numpy as np
 
 # Manim
-from manim.animation.indication import ApplyWave, Indicate
+from manim.animation.indication import Indicate
 from manim.animation.composition import Succession
-from manim.animation.creation import Unwrite
 from manim.mobject.graph import DiGraph
 from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
-from manim.mobject.text.tex_mobject import MathTex
-from manim.mobject.text.text_mobject import Text
+from manim.mobject.text.tex_mobject import Tex, MathTex
 from manim.mobject.types.vectorized_mobject import VGroup, VDict
+
+# Internal
+from animations import ApplyReverseWave
 
 
 def unit_vector(vector):
@@ -319,7 +319,9 @@ class FiniteAutomaton(DiGraph):
 
                 edge_label = tmp_edge_conf[(u, v)].pop("label", "why??")
                 if edge_label == "":
-                    edge_label = "\\epsilon"
+                    edge_label = Tex("\\epsilon")
+                else:
+                    edge_label = Tex(edge_label)
                 self.edges[(u, v)] = LabeledLine(
                     label=edge_label,
                     start=self[u],
@@ -340,10 +342,10 @@ class FiniteAutomaton(DiGraph):
                     z_index=-1,
                     **tmp_edge_conf[(u, u)]
                 )
-                label_mobject = MathTex(
+                label_mobject = Tex(
                     edge_label,
                     fill_color="white",
-                    font_size=40,
+                    font_size=20,  # TODO: Magic number
                 ).move_to(loop.get_center()).shift(
                     np.array([0.5, 0, 0])
                 ).rotate(-1 * between)
@@ -411,7 +413,9 @@ class FiniteAutomaton(DiGraph):
 
                 # An empty label is different from one that doesn't exist
                 if edge_label == "":
-                    edge_label = "\\epsilon"
+                    edge_label = MathTex("\\epsilon")
+                else:
+                    edge_label = Tex(edge_label)
                 self.edges[(u, v)] = LabeledLine(
                     label=edge_label,
                     start=self[u],
@@ -422,7 +426,7 @@ class FiniteAutomaton(DiGraph):
                 edge_label = labels.get((u, u), str((u, u)))
 
                 this_edge_config = deepcopy(general_edge_config)
-                this_edge_config.update(specific_edge_config.get((u, v), dict()))
+                this_edge_config.update(specific_edge_config.get((u, u), dict()))
 
                 between = angle_between(self[u].get_center() - self.vcenter(), np.array([1, 0, 0]))
                 if self[u].get_center()[1] < self.vcenter()[1]:
@@ -435,10 +439,10 @@ class FiniteAutomaton(DiGraph):
                     z_index=-1,
                     color=this_edge_config["color"]
                 )
-                label_mobject = MathTex(
+                label_mobject = Tex(
                     edge_label,
                     fill_color=this_edge_config["label_color"],
-                    font_size=this_edge_config["font_size"],
+                    font_size=this_edge_config["font_size"] / 2,
                 ).move_to(loop.get_center()).shift(
                     np.array([0.5, 0, 0])
                 ).rotate(-1 * between)
@@ -488,7 +492,7 @@ class FiniteAutomaton(DiGraph):
                 start_arrow: Arrow = Arrow(
                     start=fake_start,
                     end=ray * 1,
-                    fill_color=self.visual_config["vertex_color"],
+                    color=self.visual_config["vertex_color"],
                     stroke_width=5
                 )
                 self.vertices[vertex]["accessories"].add(start_arrow)
@@ -570,26 +574,13 @@ class FiniteAutomaton(DiGraph):
     def transition_animation(self, start: LabeledDot, end: LabeledDot) -> Succession:
         assert (start, end) in self.edges, f"Transition does not exist: {(start, end)}"
 
+        if start != end:
+            wiggle_vector = np.cross(self.edges[(start, end)].get_unit_vector(), np.array([0, 0, 1]))
+        else:
+            # Self-loop requires different vector calculation
+            wiggle_vector = np.array([1, 0, 0])
+
         return Succession(
-            ApplyWave(self.edges[(start, end)]),
+            ApplyReverseWave(self.edges[(start, end)], direction=wiggle_vector),
             Indicate(self.vertices[end]["base"])
         )
-
-
-class ProcessText(Text):
-    def __init__(self, text: str, **kwargs) -> None:
-        super().__init__(text, **kwargs)
-
-        if ' ' in text:
-            print("Warning, the rendering engine does not play well with whitespace. Consider replaceing with a different character, like _ (underscore)")
-
-        self.textptr = 0
-
-    def peek_next_letter(self) -> str:
-        return self.original_text[self.textptr]
-
-    def increment_letter(self) -> None:
-        self.textptr += 1
-
-    def RemoveOneCharacter(self) -> Unwrite:
-        return Unwrite(self[self.textptr])

@@ -6,7 +6,7 @@ from manim._config import tempconfig
 from manim.scene.scene import Scene
 from manim.animation.creation import Create
 
-from fa_manager import DFA_Manager
+from fa_manager import DFA_Manager, TM_Manager
 
 
 class SceneToShow(Scene):
@@ -18,7 +18,10 @@ class SceneToShow(Scene):
         with open(config_filename, "rb") as f:
             self.config = tomllib.load(f)
 
-        self.fa = DFA_Manager.from_json(fa_json, config=self.config, input_string=input_string)
+        if fa_json["fa_type"] == "dfa":
+            self.fa = DFA_Manager.from_json(fa_json, config=self.config, input_string=input_string)
+        elif fa_json["fa_type"] == "tm":
+            self.fa = TM_Manager.from_json(fa_json, config=self.config, initial_tape=input_string)
 
     def construct(self):
         self.camera.background_color = self.config["background_color"]
@@ -31,6 +34,6 @@ if __name__ == "__main__":
         print("Usage: py animate.py <fa_filename> <config_filename> <input_string>")
         exit(1)
 
-    with tempconfig({"quality": "high_quality", "preview": True}):
+    with tempconfig({"quality": "low_quality", "preview": True}):
         scene = SceneToShow(sys.argv[1], sys.argv[2], sys.argv[3])
         scene.render()

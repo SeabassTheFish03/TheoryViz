@@ -1,0 +1,20 @@
+{
+	"fa_type": "tm",
+    "states": ["q0", "q1", "q2"],
+    "tape_symbols": ["0", "1", "x", "y", "."],
+    "input_symbols": ["0", "1"],
+    "transitions": {
+        "q0": {
+            "0": ["q1","x", "R"],
+            "1": ["q2", "y", "R"]
+        },
+	    "q2": {
+	        "0": ["q2", "0", "L"],
+	        "x": ["q0", "x", "R"],
+	        "y": ["q2", "y", "L"]
+        }
+    },
+    "initial_state": "q0",
+	"blank_symbol": ".",
+	"final_states": ["q2"]
+}

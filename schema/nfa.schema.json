@@ -1,0 +1,31 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "./schema/nfa.schema.json",
+	"title": "NFA", 
+	"type": "object",
+	"properties": {
+		"fa_type": {"const": "nfa"},
+		"states": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"input_symbols": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"transitions": {"type": "object"},
+		"initial_state": {"type": "string"},
+		"final_states": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"allow_partial": {"type": "boolean"}
+	},
+	"required": ["fa_type", "states", "input_symbols", "transitions", "initial_state", "final_states"]
+}

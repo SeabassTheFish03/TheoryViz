@@ -8,12 +8,16 @@ vertex_stroke_color = "white"
 edge_color = "white"
 edge_text_color = "white"
 table_border_color = "white"
+edge_radius = 2
+whatIsThis = hello
 
 # Theory Colors
 current_state_color = "yellow"
 final_state_color = "white"
 initial_state_color = "white"
 transition_color = "yellow"
+text_shadow_color = "white"
+
 
 # Geometry Config
 vertex_radius = 0.3

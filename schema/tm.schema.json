@@ -1,0 +1,38 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "./schema/tm.schema.json",
+	"title": "TM",
+	"type": "object",
+	"properties": {
+		"fa_type": {"const": "tm"},
+		"states": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"tape_symbols": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"input_symbols": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"transitions": {"type": "object"},
+		"initial_state": {"type": "string"},
+		"blank_symbol": {"type": "string"},
+		"final_states": {
+			"type": "array",
+			"items": {"type": "string"},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"allow_partial": {"type": "boolean"}
+	},
+	"required": ["fa_type", "states", "tape_symbols", "transitions", "initial_state", "final_states", "blank_symbol"]
+}

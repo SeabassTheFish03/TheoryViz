@@ -1,11 +1,21 @@
-from automata.fa.dfa import DFA
+# Standard Library
+import json
 
-import numpy as np
+# Dependencies
+from automata.fa.dfa import DFA
+from automata.tm.dtm import DTM
+from automata.tm.configuration import TMConfiguration
+from automata.tm.tape import TMTape
 
 from manim.mobject.types.vectorized_mobject import VDict
 from manim.animation.composition import Succession, AnimationGroup
+from manim.constants import UP
 
-from finite_automaton import FiniteAutomaton, ProcessText
+from jsonschema import validate
+
+# Internal
+from finite_automaton import FiniteAutomaton
+from text_visuals import ProcessText, TuringTape
 
 
 class DFA_Manager:
@@ -19,11 +29,16 @@ class DFA_Manager:
         self.auto: DFA = auto
         self.mobj: VDict = VDict({
             "dfa": mobj,
-            "text": ProcessText(input_string),
+            "text": ProcessText(
+                input_string,
+                text_color=config["vertex_color"],
+                highlight_color=config["current_state_color"],
+                shadow_color=config["text_shadow_color"]
+            ),
         })
 
         self.mobj["dfa"].move_to([0, 0, 0])
-        self.mobj["text"].next_to(self.mobj["dfa"], np.array([0, 1, 0]))
+        self.mobj["text"].next_to(self.mobj["dfa"], UP)
 
         self.current_state = self.auto.initial_state
         self.input_string = input_string
@@ -47,17 +62,8 @@ class DFA_Manager:
 
     @classmethod
     def from_json(cls, json_object: dict, config: dict = dict(), input_string: str = ""):
-        if not isinstance(json_object, dict):
-            raise TypeError(f"json_object must be dict, not {type(json_object)}")
-        if not isinstance(input_string, str):
-            raise TypeError(f"input_string must be str, not {type(input_string)}")
-        if not isinstance(config, dict):
-            raise TypeError(f"config must be a dict, not {type(config)}")
-
-        if "type" not in json_object:
-            raise Exception("Type not specified in json_object. Must be dfa")
-        if json_object["type"].lower() != "dfa":
-            raise Exception(f"Specified type in json must be dfa, not {json_object[type]}")
+        # Throws on failure
+        cls.validate_json(json_object)
 
         allow_partial = json_object.get("allow_partial", False)
 
@@ -97,6 +103,33 @@ class DFA_Manager:
 
         return cls(auto, mobj, config, input_string)
 
+    @classmethod
+    def validate_json(cls, json_object: dict) -> None:
+        """
+        Ensures the json fed to the from_json() function conforms to all the
+        requirements of a DFA
+
+        On success, returns None. On failure, throws.
+        """
+        # Validate json format using jsonschema library
+        with open("./schema/dfa.schema.json", "rb") as f:
+            schema = json.load(f)
+        validate(
+            instance=json_object,
+            schema=schema
+        )
+
+        # Validate the transitions
+        allow_partial = json_object.get("allow_partial", False)
+        for state in json_object["states"]:
+            if state not in json_object["transitions"]:
+                raise AttributeError(f"State {state} not listed in transition table")
+            for symbol in json_object["input_symbols"]:
+                if (symbol not in json_object["transitions"][state]) and (not allow_partial):
+                    raise AttributeError(f"Transition using \"{symbol}\" missing from state {state}")
+                if (end := json_object["transitions"][state][symbol]) not in json_object["states"]:
+                    raise AttributeError(f"Destination {end} not in states list")
+
     def animate(self) -> Succession:
         sequence = []
         for _ in self.input_string:
@@ -112,7 +145,6 @@ class DFA_Manager:
             self.mobj["dfa"].add_flag(next_state, "c")
 
             self.current_state = next_state
-            print(self.mobj["dfa"]["3"].color)
 
         return Succession(*sequence)
 
@@ -126,4 +158,163 @@ class PDA_Manager:
 
 
 class TM_Manager:
-    pass
+    def __init__(
+        self,
+        auto: DTM,
+        mobj: FiniteAutomaton,
+        config: dict = dict(),
+        initial_tape: str = "",
+        maxiter: int = 1000
+    ):
+        self.auto: DTM = auto
+
+        self.mobj = VDict()
+        self.mobj["tm"] = mobj
+        self.mobj["text"] = TuringTape(initial_tape, "_", config)
+
+        self.mobj["tm"].move_to([0, 0, 0])
+        self.mobj["text"].next_to(self.mobj["tm"], 0.5 * UP).scale(0.5)
+
+        self.current_state = self.auto.initial_state
+        self.initial_tape = initial_tape
+        self.maxiter = maxiter
+
+        # A little aliasing
+        self.tm = self.auto
+
+    @classmethod
+    def _json_to_mobj_edges(cls, transitions: dict) -> dict:
+        edges = dict()
+
+        for start, symbols in transitions.items():
+            for symbol, action in symbols.items():
+                end = action[0]
+                write = action[1]
+                move = action[2]
+
+                label = f"${symbol} \\to {write},\\ {move}$"  # LaTeX format
+                if (start, end) in edges:
+                    # An edge already exists, but with a different symbol
+                    edges[(start, end)]["label"] += f"\\\\{label}"
+                else:
+                    edges[(start, end)] = {"label": label}
+
+        return edges
+
+    @classmethod
+    def from_json(cls, json_object: dict, config: dict, initial_tape: str):
+        cls.validate_json(json_object)
+
+        auto = DTM(
+            states=set(json_object["states"]),
+            input_symbols=json_object["input_symbols"],
+            tape_symbols=json_object["tape_symbols"],
+            transitions=json_object["transitions"],
+            initial_state=json_object["initial_state"],
+            final_states=set(json_object["final_states"]),
+            blank_symbol=json_object["blank_symbol"]
+        )
+
+        edges_with_options = cls._json_to_mobj_edges(json_object["transitions"])
+
+        mobj_options = {
+            "vertices": {
+                v: {
+                    "label": v,
+                    "flags": []
+                } for v in json_object["states"]
+            },
+            "edges": edges_with_options
+        }
+
+        mobj_options["vertices"][json_object["initial_state"]]["flags"].append("i")
+        mobj_options["vertices"][json_object["initial_state"]]["flags"].append("c")
+
+        for state in json_object["final_states"]:
+            mobj_options["vertices"][state]["flags"].append("f")
+
+        mobj = FiniteAutomaton(
+            vertices=json_object["states"],
+            edges=edges_with_options.keys(),
+            visual_config=config,
+            options=mobj_options
+        )
+
+        return cls(auto, mobj, config, initial_tape)
+
+    @classmethod
+    def validate_json(cls, json_object):
+        """
+        Ensures the json fed to the from_json() function conforms to all the
+        requirements of a DTM
+
+        On success, returns None. On failure, throws.
+        """
+        # Validate json format using jsonschema library
+        with open("./schema/tm.schema.json", "rb") as f:
+            schema = json.load(f)
+        validate(
+            instance=json_object,
+            schema=schema
+        )
+
+        # Validate the transitions
+        allow_partial = json_object.get("allow_partial", True)
+        for state in json_object["states"]:
+            for symbol in json_object["input_symbols"]:
+                pass
+                # if (symbol not in json_object["transitions"].get(state)) and (not allow_partial):
+                # raise AttributeError(f"Transition using \"{symbol}\" missing from state {state}")
+
+        for start, address in json_object["transitions"].items():
+            # Already validated the start symbol exists in above pass
+            for symbol, destination in address.items():
+                end = destination[0]
+                write = destination[1]
+                direction = destination[2]
+
+                if end not in json_object["states"]:
+                    raise AttributeError(f"Destination {end} does not exist")
+                if write not in json_object["tape_symbols"]:
+                    raise ValueError(f"Write value {write} not a valid tape symbol")
+                if direction not in ["l", "r", "L", "R"]:
+                    raise ValueError(f"Direction {direction} not a valid direction ('L' or 'R')")
+
+    def animate(self):
+        sequence = []
+
+        current_config = TMConfiguration(
+            self.tm.initial_state,
+            TMTape(self.initial_tape, self.tm.blank_symbol, 0)
+        )
+
+        generator = self.tm.read_input_stepwise(self.initial_tape)
+        generator.__next__()  # Get the next state ready
+
+        for tm_config in generator:
+            # tm_config is a TMConfiguration object from automata-lib
+
+            changes = self.tm.transitions[current_config.state][current_config.tape.read_symbol()]
+            write = changes[1]
+            direction = changes[2]
+
+            mobj_curr_state = str(current_config.state)
+            mobj_next_state = str(tm_config.state)
+
+            current_dot = self.mobj["tm"][mobj_curr_state]["base"]
+            next_dot = self.mobj["tm"][mobj_next_state]["base"]
+
+            sequence.append(
+                AnimationGroup(
+                    self.mobj["text"].animate_move(write, direction),
+                    self.mobj["tm"].transition_animation(mobj_curr_state, mobj_next_state),
+                    current_dot.animate.set_fill("white"),
+                    current_dot.submobjects[0].animate.set_fill("black"),
+                    next_dot.animate.set_fill("yellow"),
+                    current_dot.submobjects[0].animate.set_fill("black")
+                )
+            )
+
+            current_config = tm_config
+
+        return Succession(*sequence)

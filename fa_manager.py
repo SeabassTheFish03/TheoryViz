@@ -44,7 +44,7 @@ class DFA_Manager:
         self.input_string = input_string
 
         # A little aliasing
-        self.dfa = self.auto
+        self.tm = self.auto
 
     @classmethod
     def _json_to_mobj_edges(cls, transitions: dict) -> dict:

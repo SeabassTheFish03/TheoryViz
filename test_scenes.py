@@ -18,7 +18,7 @@ class TMTapeTest(Scene):
 
         test_tape = TuringTape("abc", "_", config)
 
-        self.play(FadeIn(test_tape))
+        self.play(FadeIn(test_tape.mobj))
         self.play(test_tape.animate_update("right"))
 
 

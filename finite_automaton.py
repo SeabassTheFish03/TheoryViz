@@ -16,7 +16,7 @@ from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
-from manim.mobject.text.tex_mobject import Tex, MathTex
+from manim.mobject.text.tex_mobject import MathTex, Tex
 from manim.mobject.types.vectorized_mobject import VGroup, VDict
 
 # Internal
@@ -571,8 +571,9 @@ class FiniteAutomaton(DiGraph):
         self.flags[state].remove(flag)
         self._redraw_vertices()
 
-    def transition_animation(self, start: LabeledDot, end: LabeledDot) -> Succession:
+    def transition_animation(self, start: str, end: str) -> Succession:
         assert (start, end) in self.edges, f"Transition does not exist: {(start, end)}"
+        print(f"Successful transition: ({start}, {end})")
 
         if start != end:
             wiggle_vector = np.cross(self.edges[(start, end)].get_unit_vector(), np.array([0, 0, 1]))

@@ -18,10 +18,11 @@ class SceneToShow(Scene):
         with open(config_filename, "rb") as f:
             self.config = tomllib.load(f)
 
+        # Triage
         if fa_json["fa_type"] == "dfa":
             self.fa = DFA_Manager.from_json(fa_json, config=self.config, input_string=input_string)
         elif fa_json["fa_type"] == "tm":
-            self.fa = TM_Manager.from_json(fa_json, config=self.config, initial_tape=input_string)
+            self.fa = TM_Manager.from_json(fa_json, config=self.config, input_string=input_string)
 
     def construct(self):
         self.camera.background_color = self.config["background_color"]

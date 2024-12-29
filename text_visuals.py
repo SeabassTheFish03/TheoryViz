@@ -6,7 +6,7 @@ __all__ = [
 from manim.animation.animation import Animation
 from manim.animation.composition import AnimationGroup
 from manim.animation.creation import Unwrite
-from manim.animation.transform import FadeToColor, Transform
+from manim.animation.transform import FadeToColor, Transform, ReplacementTransform
 from manim.mobject.geometry.polygram import Rectangle
 from manim.mobject.table import Table
 from manim.mobject.text.tex_mobject import MathTex
@@ -68,7 +68,6 @@ class ProcessText(Text):
             return Unwrite(self[self.textptr])
 
 
-# TODO: Make this a descendant of Table
 class TuringTape(Table):
     def __init__(
         self,
@@ -98,22 +97,27 @@ class TuringTape(Table):
         )
         self.add(self.indicator)
 
-        # WIP
-        left_end = Rectangle().move_to(self.get_cell((1, 1)))
+    def animate_update(self, changes):
+        write = changes[1]
+        direction = changes[2]
+        if direction == "L":
+            self.index -= 1 if self.index > 0 else 0
+        elif direction == "R":
+            self.index += 1 if self.index < len(self.text) - 1 else 0
+        else:
+            raise ValueError("Direction invalid")
 
-    def animate_change_highlighted(self, write, new_index: int) -> Animation:
-        if new_index >= len(self.text):
-            raise ValueError(f"Index {new_index} out of range for text {self.text}")
+        new_entry = Text(write).move_to(
+            self.get_entries((1, self.index + 1))
+        )
 
-        current_entry = self.get_entries(pos=(1, self.index + 1))
-        target_mobj = MathTex(write).move_to(current_entry)
-
-        self.index = new_index
         return AnimationGroup(
             self.indicator.animate.move_to(
-                self.get_cell((1, new_index + 1))
-            ),
-            Transform(current_entry, target_mobj)
+                self.get_cell((1, self.index + 1))),
+            ReplacementTransform(
+                self.get_entries((1, self.index + 1)),
+                new_entry
+            )
         )
 
     def animate_left(self, write):

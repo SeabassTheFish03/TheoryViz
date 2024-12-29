@@ -164,7 +164,8 @@ class TM_Manager:
         mobj: FiniteAutomaton,
         config: dict = dict(),
         initial_tape: str = "",
-        maxiter: int = 1000
+        max_iter: int = 100,
+        blank_symbol: str = "."
     ):
         self.auto: DTM = auto
 
@@ -177,7 +178,8 @@ class TM_Manager:
 
         self.current_state = self.auto.initial_state
         self.initial_tape = initial_tape
-        self.maxiter = maxiter
+        self.max_iter = max_iter
+        self.blank_symbol = blank_symbol
 
         # A little aliasing
         self.tm = self.auto
@@ -202,17 +204,18 @@ class TM_Manager:
         return edges
 
     @classmethod
-    def from_json(cls, json_object: dict, config: dict, initial_tape: str):
+    def from_json(cls, json_object: dict, config: dict = dict(), input_string: str = ""):
+        # Throws on failure
         cls.validate_json(json_object)
 
         auto = DTM(
             states=set(json_object["states"]),
-            input_symbols=json_object["input_symbols"],
-            tape_symbols=json_object["tape_symbols"],
+            tape_symbols=set(json_object["tape_symbols"]),
+            input_symbols=set(json_object["input_symbols"]),
             transitions=json_object["transitions"],
             initial_state=json_object["initial_state"],
+            blank_symbol=json_object["blank_symbol"],
             final_states=set(json_object["final_states"]),
-            blank_symbol=json_object["blank_symbol"]
         )
 
         edges_with_options = cls._json_to_mobj_edges(json_object["transitions"])
@@ -239,14 +242,15 @@ class TM_Manager:
             visual_config=config,
             options=mobj_options
         )
+        print(mobj)
 
-        return cls(auto, mobj, config, initial_tape)
+        return cls(auto, mobj, config, input_string, blank_symbol=json_object["blank_symbol"])
 
     @classmethod
-    def validate_json(cls, json_object):
+    def validate_json(cls, json_object: dict) -> None:
         """
         Ensures the json fed to the from_json() function conforms to all the
-        requirements of a DTM
+        requirements of a DFA
 
         On success, returns None. On failure, throws.
         """
@@ -259,62 +263,59 @@ class TM_Manager:
         )
 
         # Validate the transitions
-        allow_partial = json_object.get("allow_partial", True)
-        for state in json_object["states"]:
-            for symbol in json_object["input_symbols"]:
-                pass
-                # if (symbol not in json_object["transitions"].get(state)) and (not allow_partial):
-                # raise AttributeError(f"Transition using \"{symbol}\" missing from state {state}")
+        for start, info in json_object["transitions"].items():
+            if start not in json_object["states"]:
+                raise AttributeError(f"State {start} not valid")
+            for symbol, changes in info.items():
+                if symbol not in json_object["tape_symbols"]:
+                    raise AttributeError(f"Symbol {symbol} not valid")
+                if len(changes) != 3:
+                    raise ValueError(f"Malformed change listing {changes}")
 
-        for start, address in json_object["transitions"].items():
-            # Already validated the start symbol exists in above pass
-            for symbol, destination in address.items():
-                end = destination[0]
-                write = destination[1]
-                direction = destination[2]
+                if changes[0] not in json_object["states"]:
+                    raise AttributeError(f"Destination {changes[0]} not found")
+                if changes[1] not in json_object["tape_symbols"]:
+                    raise AttributeError(f"Write symbol {changes[1]} not valid")
+                if changes[2] not in ["R", "L"]:
+                    raise ValueError(f"Direction {changes[2]} not R or L")
 
-                if end not in json_object["states"]:
-                    raise AttributeError(f"Destination {end} does not exist")
-                if write not in json_object["tape_symbols"]:
-                    raise ValueError(f"Write value {write} not a valid tape symbol")
-                if direction not in ["l", "r", "L", "R"]:
-                    raise ValueError(f"Direction {direction} not a valid direction ('L' or 'R')")
+            if json_object["initial_state"] not in json_object["states"]:
+                raise AttributeError(f"Bad initial state {json_object["initial_state"]}")
+            if json_object["blank_symbol"] not in json_object["tape_symbols"]:
+                raise AttributeError(f"Bad blank symbol {json_object["blank_symbol"]}")
+            for final in json_object["final_states"]:
+                if final not in json_object["states"]:
+                    raise AttributeError(f"Final state {final} not found")
 
-    def animate(self):
+    def animate(self) -> Succession:
         sequence = []
-
-        current_config = TMConfiguration(
-            self.tm.initial_state,
-            TMTape(self.initial_tape, self.tm.blank_symbol, 0)
-        )
+        iters = 0
+        last_config = TMConfiguration(self.tm.initial_state, TMTape(self.initial_tape, blank_symbol=self.blank_symbol))
 
         generator = self.tm.read_input_stepwise(self.initial_tape)
-        generator.__next__()  # Get the next state ready
+        generator.__next__()  # Gets rid of initial state
 
         for tm_config in generator:
-            # tm_config is a TMConfiguration object from automata-lib
+            if iters > self.max_iter:
+                print("Maximum iterations reached")
+                break
 
-            changes = self.tm.transitions[current_config.state][current_config.tape.read_symbol()]
-            write = changes[1]
-            direction = changes[2]
-
-            mobj_curr_state = str(current_config.state)
-            mobj_next_state = str(tm_config.state)
-
-            current_dot = self.mobj["tm"][mobj_curr_state]["base"]
-            next_dot = self.mobj["tm"][mobj_next_state]["base"]
+            next_state = str(tm_config.state)
+            transition = self.tm._get_transition(last_config.state, last_config.tape.read_symbol())
 
             sequence.append(
                 AnimationGroup(
-                    self.mobj["text"].animate_move(write, direction),
-                    self.mobj["tm"].transition_animation(mobj_curr_state, mobj_next_state),
-                    current_dot.animate.set_fill("white"),
-                    current_dot.submobjects[0].animate.set_fill("black"),
-                    next_dot.animate.set_fill("yellow"),
-                    current_dot.submobjects[0].animate.set_fill("black")
+                    self.mobj["text"].animate_update(transition),
+                    self.mobj["tm"].transition_animation(
+                        self.current_state,
+                        next_state
+                    )
                 )
             )
 
-            current_config = tm_config
+            self.current_state = next_state
+
+            last_config = tm_config
+            iters += 1
 
         return Succession(*sequence)

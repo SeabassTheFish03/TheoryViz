@@ -1,6 +1,7 @@
 from manim import *
 import sys
 import json
+from text_visuals import ProcessText
 
 
 
@@ -46,7 +47,7 @@ class TransitionTable(Scene):
         # self.add(tab)
 
 class DisplayTransitionTable(Scene):
-    def __init__(self, fa_filename, input_string=""):
+    def __init__(self, fa_filename, input_string=''):
         super().__init__()
         with open(fa_filename, "rb") as f:
             fa_json = json.load(f)
@@ -74,6 +75,44 @@ class DisplayTransitionTable(Scene):
 
     def construct(self):
         self.add(self.table)
+        #create an arrow
+        initial_state_arrow = Arrow(start=LEFT, end=RIGHT, color=YELLOW)
+        # point the arrow at the initial state
+        # coor = initial_state.get_center()
+        # initial_state_arrow.move_to(coor)
+
+        sequence = []
+        current_state = self.rawJson["initial_state"]
+        for char in self.input_string:
+            if char in self.rawJson["transitions"][current_state]:
+                next_state = self.rawJson["transitions"][current_state][char]
+
+                sequence.append((current_state, next_state))
+
+                current_state = next_state
+            else: break
+
+        state_index = list(self.rawJson["states"]).index(self.rawJson["initial_state"]) + 2 #why +2???
+        # have to have input string
+        trans_index = list(self.rawJson["input_symbols"]).index(self.input_string[0]) + 2
+        # follower = self.table.get_cell((state_index, trans_index), color=YELLOW)
+
+        follower = self.table.get_cell((state_index, 1), color=YELLOW)
+        # self.add(follower)
+        Initial_arrow = Arrow(color=YELLOW).next_to(follower, LEFT)
+
+        self.add(Initial_arrow)
+
+        #create final state
+        #find final state index???
+        # identify final states - maybe not even in states? No yes. They need to be in states --> but what is their index in states (y axis of the table)
+        final_state_index = list(self.rawJson["states"]).index(list(self.rawJson["final_states"]).index(0)) + 2
+        #this value should be 1 or 0 like above when determining initial state
+        # for loop to identify multiple of them???
+        # it'd be nice if there was only one or two...
+        trans_index = list(self.rawJson["input_symbols"]).index(self.input_string[0]) + 2
+        finalstate = self.table.get_cell((final_state_index, 1), color=YELLOW)
+        self.add(finalstate)
 
 class AnimateTransitionTable(DisplayTransitionTable):
     def construct(self):
@@ -88,9 +127,10 @@ class AnimateTransitionTable(DisplayTransitionTable):
                 current_state = next_state
             else: break
 
-        self.add(self.table) # self.play(Create(self.table)) - just materializes, not creates
+        # self.add(self.table) # self.play(Create(self.table)) - just materializes, not creates
+        self.play(Create(self.table))
 
-        state_index = list(self.rawJson["states"]).index(self.rawJson["initial_state"]) + 2
+        state_index = list(self.rawJson["states"]).index(self.rawJson["initial_state"]) + 2 #why +2???
         # have to have input string
         trans_index = list(self.rawJson["input_symbols"]).index(self.input_string[0]) + 2
         follower = self.table.get_cell((state_index, trans_index), color=YELLOW)
@@ -98,7 +138,7 @@ class AnimateTransitionTable(DisplayTransitionTable):
 
         substring = self.input_string
         floater = Tex(substring, color=BLACK, fill_color=YELLOW)
-        floater.to_edge(UP)
+        # - move to top edge... floater.to_edge(UP)
         self.add(floater)
         #dig into manim. scene.py
 
@@ -123,14 +163,18 @@ class AnimateTransitionTable(DisplayTransitionTable):
 
                 self.play(
                     Transform(follower, new_follower),
-                    # Create(path),
-                    #floater.to_edge(UP),
-                    #Transform(floater, Tex(str(substring), color=BLACK, fill_color=YELLOW)),
+                    #Create(path),
+                    floater.to_edge(UP),
+                    Transform(floater, Tex(str(substring), color=BLACK, fill_color=YELLOW)),
+                    #ProcessText(substring),
                     
                     #this is where the text is coming from - how to make it go up top and not disappear. Check Sebastians code.
-                    # MoveAlongPath(floater, path),
+                    #MoveAlongPath(floater, path),
                 )
-                # self.remove(path)
+                #self.remove(path)
+                # self.add(ProcessText(substring))
+                #add it to self. then repeatedly call it.
+                # repeatedly call it to remove one character
                 current_state = next_state
             else: break
 
@@ -217,7 +261,7 @@ if __name__ == "__main__":
 
 
     with tempconfig({"quality": "low_quality", "preview": True}):
-        # scene = DisplayTransitionTable(sys.argv[1])
-        animation = AnimateTransitionTable(sys.argv[1], sys.argv[2])
-        #scene.render()
-        animation.render()
+        scene = DisplayTransitionTable(sys.argv[1], sys.argv[2])
+        scene.render()
+        # animation = AnimateTransitionTable(sys.argv[1], sys.argv[2])
+        # animation.render()

@@ -14,8 +14,16 @@
 			"verb": "move",
 			"object": "thing",
 			"predicate": {
-				"x": 0,
-				"y": 0
+				"x": 1,
+				"y": 1
+			}
+		},
+		{
+			"verb": "move",
+			"object": "thing",
+			"predicate": {
+				"x": -1,
+				"y": -1
 			}
 		}
 	]

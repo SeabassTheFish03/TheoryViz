@@ -114,6 +114,18 @@ class DisplayTransitionTable(Scene):
         ###finalstate = self.table.get_cell((final_state_index, 1), color=YELLOW)
         ####self.add(finalstate)
 
+        ### pull out final states, left column
+        # for each final state
+        # loop through left column
+
+        # list of all cells. - stores internally
+        # [x[0] for x in self.table.cells()]
+        # map function is x[0]???
+
+        # look in just the left column, try to match each cell in the left column and if matches, then connect
+        # make it 90% of size, then copy it
+        # do that for each one
+
 class AnimateTransitionTable(DisplayTransitionTable):
     def construct(self):
         sequence = []
@@ -127,20 +139,21 @@ class AnimateTransitionTable(DisplayTransitionTable):
                 current_state = next_state
             else: break
 
-        # self.add(self.table) # self.play(Create(self.table)) - just materializes, not creates
         self.play(Create(self.table))
 
-        state_index = list(self.rawJson["states"]).index(self.rawJson["initial_state"]) + 2 #why +2???
+        state_index = list(self.rawJson["states"]).index(self.rawJson["initial_state"]) + 2
         # have to have input string
         trans_index = list(self.rawJson["input_symbols"]).index(self.input_string[0]) + 2
         follower = self.table.get_cell((state_index, trans_index), color=YELLOW)
         self.play(Create(follower))
 
         substring = self.input_string
-        floater = Tex(substring, color=BLACK, fill_color=YELLOW)
-        # - move to top edge... floater.to_edge(UP)
-        self.add(floater)
-        #dig into manim. scene.py
+        stringOfInput = ProcessText(substring)
+        self.add(stringOfInput)
+
+        stringOfInput.move_to(UP*3.5)
+
+    
 
         current_state = self.rawJson["initial_state"]
         next_state = self.rawJson["transitions"][current_state][self.input_string[0]]
@@ -149,32 +162,19 @@ class AnimateTransitionTable(DisplayTransitionTable):
             substring = substring[1:]
 
             if char in self.rawJson["transitions"][current_state]:
-                # if next_state != current_state:
-                #     arrow = self.g.edges[(current_state, next_state)]
-                # else:
-                #     arrow = self.loop_arcs[current_state]
-                # path = arrow.copy().set(color=RED, stroke_width=10)
-
                 state_index = list(self.rawJson["states"]).index(current_state) + 2
                 trans_index = list(self.rawJson["input_symbols"]).index(char) + 2
 
                 new_follower = self.table.get_cell((state_index, trans_index), color=YELLOW)
                 next_state = self.rawJson["transitions"][current_state][char]
 
+
                 self.play(
                     Transform(follower, new_follower),
-                    #Create(path),
-                    floater.to_edge(UP),
-                    Transform(floater, Tex(str(substring), color=BLACK, fill_color=YELLOW)),
-                    #ProcessText(substring),
-                    
-                    #this is where the text is coming from - how to make it go up top and not disappear. Check Sebastians code.
-                    #MoveAlongPath(floater, path),
+                    stringOfInput.RemoveOneCharacter()
+
                 )
-                #self.remove(path)
-                # self.add(ProcessText(substring))
-                #add it to self. then repeatedly call it.
-                # repeatedly call it to remove one character
+                stringOfInput.increment_letter()
                 current_state = next_state
             else: break
 
@@ -261,7 +261,7 @@ if __name__ == "__main__":
 
 
     with tempconfig({"quality": "low_quality", "preview": True}):
-        scene = DisplayTransitionTable(sys.argv[1], sys.argv[2])
-        scene.render()
-        # animation = AnimateTransitionTable(sys.argv[1], sys.argv[2])
-        # animation.render()
+        # scene = DisplayTransitionTable(sys.argv[1], sys.argv[2])
+        # scene.render()
+        animation = AnimateTransitionTable(sys.argv[1], sys.argv[2])
+        animation.render()

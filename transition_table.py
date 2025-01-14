@@ -106,13 +106,13 @@ class DisplayTransitionTable(Scene):
         #create final state
         #find final state index???
         # identify final states - maybe not even in states? No yes. They need to be in states --> but what is their index in states (y axis of the table)
-        final_state_index = list(self.rawJson["states"]).index(list(self.rawJson["final_states"]).index(0)) + 2
+        ####final_state_index = list(self.rawJson["states"]).index(list(self.rawJson["final_states"]).index(0)) + 2
         #this value should be 1 or 0 like above when determining initial state
         # for loop to identify multiple of them???
         # it'd be nice if there was only one or two...
         trans_index = list(self.rawJson["input_symbols"]).index(self.input_string[0]) + 2
-        finalstate = self.table.get_cell((final_state_index, 1), color=YELLOW)
-        self.add(finalstate)
+        ###finalstate = self.table.get_cell((final_state_index, 1), color=YELLOW)
+        ####self.add(finalstate)
 
 class AnimateTransitionTable(DisplayTransitionTable):
     def construct(self):

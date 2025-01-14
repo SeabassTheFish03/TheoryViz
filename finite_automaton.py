@@ -345,7 +345,7 @@ class FiniteAutomaton(DiGraph):
                 label_mobject = Tex(
                     edge_label,
                     fill_color="white",
-                    font_size=20,  # TODO: Magic number
+                    font_size=20,  # Visual Config is not created yet, this gets fixed in repopulate_edge_dict()
                 ).move_to(loop.get_center()).shift(
                     np.array([0.5, 0, 0])
                 ).rotate(-1 * between)
@@ -442,7 +442,7 @@ class FiniteAutomaton(DiGraph):
                 label_mobject = Tex(
                     edge_label,
                     fill_color=this_edge_config["label_color"],
-                    font_size=this_edge_config["font_size"] / 2,
+                    font_size=this_edge_config["font_size"],
                 ).move_to(loop.get_center()).shift(
                     np.array([0.5, 0, 0])
                 ).rotate(-1 * between)
@@ -511,6 +511,7 @@ class FiniteAutomaton(DiGraph):
         self.add(*self.vertices.values())
 
     def _redraw_vertices(self) -> None:
+        """
         for vertex, opts in self.flags.items():
             # The initial and final states should not change for the duration of the animation,
             #   so they are not handled here. See _init_vertices()
@@ -520,6 +521,7 @@ class FiniteAutomaton(DiGraph):
             else:
                 self.vertices[vertex]["base"].set_color(self.visual_config["vertex_color"])
                 self.vertices[vertex]["base"].submobjects[0].set_color(self.visual_config["vertex_text_color"])
+        """
 
         self.remove(*self.vertices.values())
         self.add(*self.vertices.values())

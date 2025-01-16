@@ -1,0 +1,1 @@
+{"fa_type": "dfa", "states": ["N", "P", "D"], "input_symbols": ["a", "b", "c", "d", "e"], "transitions": {"N": {"a": "P", "b": "P", "c": "D", "d": "D", "e": "D"}, "P": {"a": "D", "b": "D", "c": "N", "d": "N", "e": "N"}, "D": {"a": "D", "b": "D", "c": "D", "d": "D", "e": "D"}}, "initial_state": "N", "final_states": ["P"]}

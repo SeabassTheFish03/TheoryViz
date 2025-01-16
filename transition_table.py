@@ -75,11 +75,6 @@ class DisplayTransitionTable(Scene):
 
     def construct(self):
         self.add(self.table)
-        #create an arrow
-        initial_state_arrow = Arrow(start=LEFT, end=RIGHT, color=YELLOW)
-        # point the arrow at the initial state
-        # coor = initial_state.get_center()
-        # initial_state_arrow.move_to(coor)
 
         sequence = []
         current_state = self.rawJson["initial_state"]
@@ -100,31 +95,20 @@ class DisplayTransitionTable(Scene):
         follower = self.table.get_cell((state_index, 1), color=YELLOW)
         # self.add(follower)
         Initial_arrow = Arrow(color=YELLOW).next_to(follower, LEFT)
-
         self.add(Initial_arrow)
 
         #create final state
-        #find final state index???
-        # identify final states - maybe not even in states? No yes. They need to be in states --> but what is their index in states (y axis of the table)
-        ####final_state_index = list(self.rawJson["states"]).index(list(self.rawJson["final_states"]).index(0)) + 2
-        #this value should be 1 or 0 like above when determining initial state
-        # for loop to identify multiple of them???
-        # it'd be nice if there was only one or two...
-        trans_index = list(self.rawJson["input_symbols"]).index(self.input_string[0]) + 2
-        ###finalstate = self.table.get_cell((final_state_index, 1), color=YELLOW)
-        ####self.add(finalstate)
+        list_of_final_states = list(self.rawJson["final_states"])
+        for elem in list_of_final_states:
+            listOfRows = list(self.table.row_labels)
+            for label in listOfRows:
+                print(str(label)[5], " == ", elem)
+                if elem == str(label)[5]:
+                    print(self.table.row_labels.index(label))
+                    finalstatebox = self.table.get_cell((self.table.row_labels.index(label)+2, 1), color=WHITE)
+                    copyoffinalstatebox = finalstatebox.scale(0.9)
+                    self.add(copyoffinalstatebox)
 
-        ### pull out final states, left column
-        # for each final state
-        # loop through left column
-
-        # list of all cells. - stores internally
-        # [x[0] for x in self.table.cells()]
-        # map function is x[0]???
-
-        # look in just the left column, try to match each cell in the left column and if matches, then connect
-        # make it 90% of size, then copy it
-        # do that for each one
 
 class AnimateTransitionTable(DisplayTransitionTable):
     def construct(self):
@@ -152,8 +136,24 @@ class AnimateTransitionTable(DisplayTransitionTable):
         self.add(stringOfInput)
 
         stringOfInput.move_to(UP*3.5)
+        
+        #create initial state arrow
+        initialstatebox = self.table.get_cell((state_index, 1))
+        Initial_arrow = Arrow(color=YELLOW).next_to(initialstatebox, LEFT)
+        self.add(Initial_arrow)
 
-    
+        #create final state boxes
+        list_of_final_states = list(self.rawJson["final_states"])
+        for elem in list_of_final_states:
+            listOfRows = list(self.table.row_labels)
+            for label in listOfRows:
+                print(str(label)[5], " == ", elem)
+                if elem == str(label)[5]:
+                    print(self.table.row_labels.index(label))
+                    finalstatebox = self.table.get_cell((self.table.row_labels.index(label)+2, 1), color=WHITE)
+                    copyoffinalstatebox = finalstatebox.scale(0.9)
+                    self.add(copyoffinalstatebox)
+
 
         current_state = self.rawJson["initial_state"]
         next_state = self.rawJson["transitions"][current_state][self.input_string[0]]
@@ -168,11 +168,9 @@ class AnimateTransitionTable(DisplayTransitionTable):
                 new_follower = self.table.get_cell((state_index, trans_index), color=YELLOW)
                 next_state = self.rawJson["transitions"][current_state][char]
 
-
                 self.play(
                     Transform(follower, new_follower),
                     stringOfInput.RemoveOneCharacter()
-
                 )
                 stringOfInput.increment_letter()
                 current_state = next_state

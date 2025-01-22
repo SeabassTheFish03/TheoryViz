@@ -1,4 +1,5 @@
 __all__ = {
+    "LabeledCurvedArrow",
     "FiniteAutomaton"
 }
 
@@ -12,7 +13,7 @@ import numpy as np
 from manim.animation.indication import Indicate
 from manim.animation.composition import Succession
 from manim.mobject.graph import DiGraph
-from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
+from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot, Dot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
@@ -31,6 +32,41 @@ def angle_between(v1, v2):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+
+class LabeledCurvedArrow(CurvedArrow):
+    def __init__(self, around=Dot(), buffer=0, config=None, **kwargs):
+        start_point = [around.get_left()[0] - buffer, around.get_center()[1], around.get_center()[2]]
+        end_point = [around.get_right()[0] + buffer, around.get_center()[1], around.get_center()[2]]
+
+        self.around = around
+        self.label = VGroup()
+        super().__init__(start_point, end_point)
+        self.label = VGroup(Dot(color="RED", z_index=100).move_to(self.get_center() + np.array([0, self.height / 2, 0])))
+        self.label.add(
+            BackgroundRectangle(
+                self.label,
+                buff=0.05,
+                color=config["frame_fill_color"],
+                fill_opacity=config["frame_fill_opacity"],
+                stroke_width=0.5,
+            ),
+            SurroundingRectangle(
+                self.label,
+                buff=0.05,
+                color=config["label_color"],
+                stroke_width=0.5
+            )
+        )
+        self.add(self.label)
+
+    def rotate(self, angle, axis, about_point=None, **kwargs):
+        if about_point is None:
+            about_point = self.around
+
+        super().rotate(angle, axis, about_point, **kwargs)
+        self.label.rotate(-1 * angle, **kwargs)
+        return self
 
 
 class FiniteAutomaton(DiGraph):
@@ -303,86 +339,9 @@ class FiniteAutomaton(DiGraph):
         edges: dict[(str, str), LabeledLine],
         labels: dict[(str, str), str]
     ) -> None:
-        tmp_edge_conf: dict = deepcopy(self._edge_config)
-
         self.edges = dict()
         for (u, v) in edges:
-            if u != v:
-                if (v, u) in edges:
-                    vec1 = self[v].get_center() - self[u].get_center()
-                    vec2 = np.cross(vec1, np.array([0, 0, 1]))
-
-                    length = np.linalg.norm(vec2)
-                    offset = 0.1 * vec2 / length
-                else:
-                    offset = np.array([0, 0, 0])
-
-                edge_label = tmp_edge_conf[(u, v)].pop("label", "why??")
-                if edge_label == "":
-                    edge_label = Tex("\\epsilon")
-                else:
-                    edge_label = Tex(edge_label)
-                self.edges[(u, v)] = LabeledLine(
-                    label=edge_label,
-                    start=self[u],
-                    end=self[v],
-                    **tmp_edge_conf[(u, v)]
-                ).shift(offset)
-            else:
-                edge_label = tmp_edge_conf[(u, u)].pop("label", "g")
-
-                between = angle_between(self[u].get_center() - self.vcenter(), np.array([1, 0, 0]))
-                if self[u].get_center()[1] < self.vcenter()[1]:
-                    between *= -1
-
-                loop = CurvedArrow(
-                    start_point=self[u].get_top(),
-                    end_point=self[u].get_bottom(),
-                    angle=-4,
-                    z_index=-1,
-                    **tmp_edge_conf[(u, u)]
-                )
-                label_mobject = Tex(
-                    edge_label,
-                    fill_color="white",
-                    font_size=20,  # Visual Config is not created yet, this gets fixed in repopulate_edge_dict()
-                ).move_to(loop.get_center()).shift(
-                    np.array([0.5, 0, 0])
-                ).rotate(-1 * between)
-
-                label_background = BackgroundRectangle(
-                    label_mobject,
-                    buff=0.05,
-                    color="black",
-                    fill_opacity=1,
-                    stroke_width=0.5,
-                ).rotate(-1 * between)
-                label_frame = SurroundingRectangle(
-                    label_mobject,
-                    buff=0.05,
-                    color="white",
-                    stroke_width=0.5
-                ).rotate(-1 * between)
-
-                label_group = VGroup(
-                    loop,
-                    label_frame,
-                    label_background,
-                    label_mobject
-                )
-                self.edges[(u, u)] = VGroup(label_group).rotate(
-                    between,
-                    about_point=self[u].get_center()
-                )
-
-        for (u, v), edge in self.edges.items():
-            try:
-                if isinstance(edge, LabeledLine):
-                    edge.add_tip(**self._tip_config[(u, v)])
-            except TypeError:
-                print("Unexpected tip type!")
-                print(self._tip_config)
-                exit()
+            self.edges[(u, u)] = Dot()
 
     def _repopulate_edge_dict(
         self,
@@ -428,49 +387,7 @@ class FiniteAutomaton(DiGraph):
                 this_edge_config = deepcopy(general_edge_config)
                 this_edge_config.update(specific_edge_config.get((u, u), dict()))
 
-                between = angle_between(self[u].get_center() - self.vcenter(), np.array([1, 0, 0]))
-                if self[u].get_center()[1] < self.vcenter()[1]:
-                    between *= -1
-
-                loop = CurvedArrow(
-                    start_point=self[u].get_top(),
-                    end_point=self[u].get_bottom(),
-                    angle=-4,
-                    z_index=-1,
-                    color=this_edge_config["color"]
-                )
-                label_mobject = Tex(
-                    edge_label,
-                    fill_color=this_edge_config["label_color"],
-                    font_size=this_edge_config["font_size"],
-                ).move_to(loop.get_center()).shift(
-                    np.array([0.5, 0, 0])
-                ).rotate(-1 * between)
-
-                label_background = BackgroundRectangle(
-                    label_mobject,
-                    buff=0.05,
-                    color=this_edge_config["frame_fill_color"],
-                    fill_opacity=this_edge_config["frame_fill_opacity"],
-                    stroke_width=0.5,
-                ).rotate(-1 * between)
-                label_frame = SurroundingRectangle(
-                    label_mobject,
-                    buff=0.05,
-                    color=this_edge_config["label_color"],
-                    stroke_width=0.5
-                ).rotate(-1 * between)
-
-                label_group = VGroup(
-                    loop,
-                    label_frame,
-                    label_background,
-                    label_mobject,
-                )
-                self.edges[(u, u)] = label_group.rotate(
-                    between,
-                    about_point=self[u].get_center()
-                )
+                self.edges[(u, u)] = LabeledCurvedArrow(around=self[u], buffer=0.1, config=this_edge_config)
 
         for (u, v), edge in self.edges.items():
             try:

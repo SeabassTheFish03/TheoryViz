@@ -110,7 +110,7 @@ class DisplayTransitionTable(Scene):
                     self.add(copyoffinalstatebox)
 
 
-class AnimateTransitionTable(DisplayTransitionTable):
+class AnimateTransitionTable(DisplayTransitionTable): #inherit from table, write transition table class that inherits from table, self.getcell
     def construct(self):
         sequence = []
         current_state = self.rawJson["initial_state"]
@@ -147,9 +147,9 @@ class AnimateTransitionTable(DisplayTransitionTable):
         for elem in list_of_final_states:
             listOfRows = list(self.table.row_labels)
             for label in listOfRows:
-                print(str(label)[5], " == ", elem)
+                # print(str(label)[5], " == ", elem)
                 if elem == str(label)[5]:
-                    print(self.table.row_labels.index(label))
+                    # print(self.table.row_labels.index(label))
                     finalstatebox = self.table.get_cell((self.table.row_labels.index(label)+2, 1), color=WHITE)
                     copyoffinalstatebox = finalstatebox.scale(0.9)
                     self.add(copyoffinalstatebox)
@@ -261,5 +261,5 @@ if __name__ == "__main__":
     with tempconfig({"quality": "low_quality", "preview": True}):
         # scene = DisplayTransitionTable(sys.argv[1], sys.argv[2])
         # scene.render()
-        animation = AnimateTransitionTable(sys.argv[1], sys.argv[2])
+        animation = AnimateTransitionTable(sys.argv[1], sys.argv[2]) # fa_filename, input_string
         animation.render()

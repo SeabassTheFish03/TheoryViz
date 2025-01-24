@@ -10,12 +10,15 @@ from automata.tm.tape import TMTape
 from manim.mobject.types.vectorized_mobject import VDict
 from manim.animation.composition import Succession, AnimationGroup
 from manim.constants import UP
+from manim.constants import RIGHT
 
 from jsonschema import validate
 
 # Internal
 from finite_automaton import FiniteAutomaton
 from text_visuals import ProcessText, TuringTape
+from transition_table_mobject import DisplayTransitionTable
+from transition_table_mobject import AnimateTransitionTable
 
 
 class DFA_Manager:
@@ -24,7 +27,15 @@ class DFA_Manager:
         auto: DFA,
         mobj: FiniteAutomaton,
         config: dict = dict(),
-        input_string: str = ""
+        input_string: str = "",
+        #transition_table: AnimateTransitionTable(fa_filename, input_string)
+        #create transition table here?
+        #transition_table: Scene
+        #with tempconfig({"quality": "low_quality", "preview": True}):
+        #   animation = AnimateTransitionTable(sys.argv[1], sys.argv[2]) # fa_filename, input_string
+        #animation = DisplayTransitionTable(sys.argv[1], input_string) # fa_filename, input_string
+        #so what if the DFA had a transition table attached. and then every time makes a transition,
+        # it calls for the same on the table
     ) -> None:
         self.auto: DFA = auto
         self.mobj: VDict = VDict({
@@ -34,11 +45,13 @@ class DFA_Manager:
                 text_color=config["vertex_color"],
                 highlight_color=config["current_state_color"],
                 shadow_color=config["text_shadow_color"]
-            ),
+            )#,
+            #"transition_table": AnimateTransitionTable(fa_filename, input_string)
         })
 
         self.mobj["dfa"].move_to([0, 0, 0])
         self.mobj["text"].next_to(self.mobj["dfa"], UP)
+        #self.mobj["transition_table"].next_to(self.mobj["dfa"], RIGHT)
 
         self.current_state = self.auto.initial_state
         self.input_string = input_string
@@ -75,6 +88,8 @@ class DFA_Manager:
             final_states=set(json_object["final_states"]),
             allow_partial=allow_partial
         )
+
+        #use the json instead of the file name
 
         edges_with_options = cls._json_to_mobj_edges(json_object["transitions"])
 

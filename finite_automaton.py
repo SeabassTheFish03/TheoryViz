@@ -341,7 +341,7 @@ class FiniteAutomaton(DiGraph):
     ) -> None:
         self.edges = dict()
         for (u, v) in edges:
-            self.edges[(u, u)] = Dot()
+            self.edges[(u, v)] = Dot()
 
     def _repopulate_edge_dict(
         self,

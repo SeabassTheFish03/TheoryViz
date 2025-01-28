@@ -5,6 +5,7 @@ __all__ = {
 
 # Standard Lib
 from copy import deepcopy
+from math import tau
 
 # Dependencies
 import numpy as np
@@ -14,7 +15,7 @@ from manim.animation.indication import Indicate
 from manim.animation.composition import Succession
 from manim.mobject.graph import DiGraph
 from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot, Dot
-from manim.mobject.geometry.labeled import LabeledLine
+from manim.mobject.geometry.labeled import LabeledLine, Label
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
 from manim.mobject.text.tex_mobject import MathTex, Tex
@@ -35,29 +36,19 @@ def angle_between(v1, v2):
 
 
 class LabeledCurvedArrow(CurvedArrow):
-    def __init__(self, around=Dot(), buffer=0, config=None, **kwargs):
+    def __init__(self, label, around=Dot(), buffer=0, config=dict(), **kwargs):
         start_point = [around.get_left()[0] - buffer, around.get_center()[1], around.get_center()[2]]
         end_point = [around.get_right()[0] + buffer, around.get_center()[1], around.get_center()[2]]
+        super().__init__(start_point, end_point, angle=math.tau * 2 / 3)
 
         self.around = around
-        self.label = VGroup()
-        super().__init__(start_point, end_point)
-        self.label = VGroup(Dot(color="RED", z_index=100).move_to(self.get_center() + np.array([0, self.height / 2, 0])))
-        self.label.add(
-            BackgroundRectangle(
-                self.label,
-                buff=0.05,
-                color=config["frame_fill_color"],
-                fill_opacity=config["frame_fill_opacity"],
-                stroke_width=0.5,
-            ),
-            SurroundingRectangle(
-                self.label,
-                buff=0.05,
-                color=config["label_color"],
-                stroke_width=0.5
-            )
-        )
+
+        self.label = Label(
+            label=label,
+            label_config=config.get("label_config", None),
+            box_config=config.get("box_config", None),
+            frame_config=config.get("frame_config", None)
+        ).move_to(label_point)
         self.add(self.label)
 
     def rotate(self, angle, axis, about_point=None, **kwargs):
@@ -252,23 +243,21 @@ class FiniteAutomaton(DiGraph):
     def _edge_config_from_bigconfig(self, config: dict) -> dict:
         toml_to_mobject: dict[str, str] = {
             "edge_color": "color",
-            "edge_text_color": "label_color",
             "edge_label_position": "label_position",
             "edge_label_frame": "label_frame",
             "edge_label_frame_fill": "frame_fill_color",
             "edge_label_frame_opacity": "frame_fill_opacity",
+        }
+        toml_to_label: dict[str, str] = {
+            "edge_text_color": "color",
+            "edge_label_frame":
         }
 
         # These are the kwargs that Manim understands and affect the appearance of the edge
         mobject_keys: list[str] = [
             # From LabeledLine
             "color",
-            "label_color",
-            "font_size",
             "label_position",
-            "label_frame",
-            "frame_fill_color",
-            "frame_fill_opacity",
             # From Line
             # From TipableVMobject
             # From VMobject
@@ -281,15 +270,32 @@ class FiniteAutomaton(DiGraph):
             "sheen_factor",
             "sheen_direction",
         ]
+        label_keys = [
+            "label_color",
+            "font_size",
+            "label_position",
+            "label_frame",
+            "frame_fill_color",
+            "frame_fill_opacity",
+        ]
 
-        edge_config: dict = dict()
+        edge_config: dict = {"label_config": {}}
         for key, value in config.items():
             # If it's in there, translate, else let it pass
             key = toml_to_mobject.get(key, key)
 
             if key in mobject_keys:
                 edge_config[str(key)] = value
+            elif key in label_keys:
+
         return edge_config
+
+    def _edge_config_from_bigconfig(self, config: dict) -> dict:
+        edge_config = {
+            "label_config": {},
+            "box_config": {},
+            "frame_config": {}
+        }
 
     def _graph_config_from_bigconfig(self, config: dict) -> dict:
         toml_to_mobject: dict[str, str] = {
@@ -387,7 +393,7 @@ class FiniteAutomaton(DiGraph):
                 this_edge_config = deepcopy(general_edge_config)
                 this_edge_config.update(specific_edge_config.get((u, u), dict()))
 
-                self.edges[(u, u)] = LabeledCurvedArrow(around=self[u], buffer=0.1, config=this_edge_config)
+                self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config)
 
         for (u, v), edge in self.edges.items():
             try:

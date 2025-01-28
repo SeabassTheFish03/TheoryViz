@@ -4,25 +4,26 @@ import json
 from text_visuals import ProcessText
 
 class DisplayTransitionTable(Table):
-    def __init__(self, fa_filename, input_string=''):
+    def __init__(self, json, input_string=''): # json = fa_filename
         
-        with open(fa_filename, "rb") as f:
-            fa_json = json.load(f)
-        self.rawJson = fa_json
+        # with open(fa_filename, "rb") as f:
+        #     fa_json = json.load(f)
+        # self.rawJson = fa_json already opened and established
+        self.json = json #
         self.input_string = input_string
 
         top_row = []
-        for sym in self.rawJson["input_symbols"]:
+        for sym in self.json["input_symbols"]: # rawJson
             top_row.append(sym)
 
         state_rows = []
-        for state in self.rawJson["states"]:
+        for state in self.json["states"]: # rawJson
             new_row = []
-            for sym in self.rawJson["input_symbols"]:
-                new_row.append(self.rawJson["transitions"][state][sym])
+            for sym in self.json["input_symbols"]: # rawJson
+                new_row.append(self.json["transitions"][state][sym]) # rawJson
             state_rows.append(new_row)
 
-        row_labelsx = [Tex(x) for x in self.rawJson["states"]]
+        row_labelsx = [Tex(x) for x in self.json["states"]] # rawJson
         col_labelsx = [Tex(x) for x in top_row]
 
         super().__init__(state_rows,
@@ -31,14 +32,16 @@ class DisplayTransitionTable(Table):
                          include_outer_lines=True)
 
 
-        state_index = list(self.rawJson["states"]).index(self.rawJson["initial_state"]) + 2
+        state_index = list(self.json["states"]).index(self.json["initial_state"]) + 2 # rawJson x2
 
+        # create the initial arrow
         follower = self.get_cell((state_index, 1))
-        Initial_arrow = Arrow(color=YELLOW).next_to(follower, LEFT)
+        Initial_arrow = Arrow(color=YELLOW,stroke_width=20,buff=0.6, max_stroke_width_to_length_ratio=20, max_tip_length_to_length_ratio=0.7).next_to(follower, LEFT)
+        
         self.add(Initial_arrow)
 
         #create final state box
-        list_of_final_states = list(self.rawJson["final_states"])
+        list_of_final_states = list(self.json["final_states"]) # rawJson
         for elem in list_of_final_states:
             listOfRows = list(self.row_labels)
             for label in listOfRows:
@@ -50,26 +53,22 @@ class DisplayTransitionTable(Table):
                     self.add(copyoffinalstatebox)
 
 class AnimateTransitionTable(DisplayTransitionTable):
-    # need to def init - set up everything as per normal
-    # then the individual steps - so the play thingy, that's all called via different definitions
-    # like def nextStep() or whatever --> checking fa_manager - no the processText thingy for those ideas.
     def __init__(self, fa_filename, input_string=''):
-        super().__init__(fa_filename, input_string) # this calls DisplayTransitionTable. Need to refactor
-        # in order to use just the json already made instead of the filename
+        super().__init__(fa_filename, input_string) # this calls DisplayTransitionTable
         sequence = []
-        current_state = self.rawJson["initial_state"]
+        current_state = self.json["initial_state"] # rawJson
         for char in self.input_string:
-            if char in self.rawJson["transitions"][current_state]:
-                next_state = self.rawJson["transitions"][current_state][char]
+            if char in self.json["transitions"][current_state]: # rawJson
+                next_state = self.json["transitions"][current_state][char] # rawJson
                 sequence.append((current_state, next_state))
                 current_state = next_state
             else: break
 
         # self.play(Create(self.table)) table is already created based on the super.init
 
-        state_index = list(self.rawJson["states"]).index(self.rawJson["initial_state"]) + 2 
+        state_index = list(self.json["states"]).index(self.json["initial_state"]) + 2 # rawJson
         # have to have input string
-        trans_index = list(self.rawJson["input_symbols"]).index(self.input_string[0]) + 2
+        trans_index = list(self.json["input_symbols"]).index(self.input_string[0]) + 2 # rawJson
         follower = self.get_cell((state_index, trans_index), color=YELLOW)
         # self.play(Create(follower))
         self.add(follower) #follower box added - movement of this box is relegated to a different function
@@ -82,7 +81,7 @@ class AnimateTransitionTable(DisplayTransitionTable):
 
         self.stringOfInput.move_to(UP*3.5) #moves to the top...again, don't need this later
 
-        current_state = self.rawJson["initial_state"]
+        current_state = self.json["initial_state"] # rawJson
         self.current_state = (current_state)
 
         # this is not initializing stuff - new definition required
@@ -90,17 +89,28 @@ class AnimateTransitionTable(DisplayTransitionTable):
         char = self.input_string[0]
         self.input_string = self.input_string[1:]
 
-        if char in self.rawJson["transitions"][self.current_state]:
-            state_index = list(self.rawJson["states"]).index(self.current_state) + 2
-            trans_index = list(self.rawJson["input_symbols"]).index(char) + 2
+        if char in self.json["transitions"][self.current_state]: # rawJson
+            state_index = list(self.json["states"]).index(self.current_state) + 2 # rawJson
+            trans_index = list(self.json["input_symbols"]).index(char) + 2 # rawJson
 
             new_follower = self.get_cell((state_index, trans_index), color=YELLOW)
-            next_state = self.rawJson["transitions"][self.current_state][char]
+            next_state = self.json["transitions"][self.current_state][char] # rawJson
 
             self.current_state = next_state
 
+            animation = AnimationGroup(
+                Transform(self.follower, new_follower),
+                self.stringOfInput.RemoveOneCharacter()
+            )
+            self.stringOfInput.increment_letter()
+
+
+            return (animation)
+        
+        # transition table is delayed by one....
+
             return AnimationGroup(
-                Transform(self.follower, new_follower) # does this update it within the mobject itself? or do I need to update that manually?
+                Transform(self.follower, new_follower)
                 # self.stringOfInput.RemoveOneCharacter(),
                 # self.stringOfInput.increment_letter()
             )

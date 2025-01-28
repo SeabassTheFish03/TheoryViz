@@ -17,7 +17,7 @@ from jsonschema import validate
 # Internal
 from finite_automaton import FiniteAutomaton
 from text_visuals import ProcessText, TuringTape
-from transition_table_mobject import DisplayTransitionTable
+# from transition_table_mobject import DisplayTransitionTable
 from transition_table_mobject import AnimateTransitionTable
 
 
@@ -28,14 +28,7 @@ class DFA_Manager:
         mobj: FiniteAutomaton,
         config: dict = dict(),
         input_string: str = "",
-        #transition_table: AnimateTransitionTable(fa_filename, input_string)
-        #create transition table here?
-        #transition_table: Scene
-        #with tempconfig({"quality": "low_quality", "preview": True}):
-        #   animation = AnimateTransitionTable(sys.argv[1], sys.argv[2]) # fa_filename, input_string
-        #animation = DisplayTransitionTable(sys.argv[1], input_string) # fa_filename, input_string
-        #so what if the DFA had a transition table attached. and then every time makes a transition,
-        # it calls for the same on the table
+        json_object: dict = dict(),
     ) -> None:
         self.auto: DFA = auto
         self.mobj: VDict = VDict({
@@ -45,13 +38,13 @@ class DFA_Manager:
                 text_color=config["vertex_color"],
                 highlight_color=config["current_state_color"],
                 shadow_color=config["text_shadow_color"]
-            )#,
-            #"transition_table": AnimateTransitionTable(fa_filename, input_string)
+            ),
+            "transition_table": AnimateTransitionTable(json_object, input_string)
         })
 
-        self.mobj["dfa"].move_to([0, 0, 0])
+        self.mobj["dfa"].move_to([-4, 0, 0])
         self.mobj["text"].next_to(self.mobj["dfa"], UP)
-        #self.mobj["transition_table"].next_to(self.mobj["dfa"], RIGHT)
+        self.mobj["transition_table"].next_to(self.mobj["dfa"], RIGHT)
 
         self.current_state = self.auto.initial_state
         self.input_string = input_string
@@ -116,7 +109,8 @@ class DFA_Manager:
             options=mobj_options
         )
 
-        return cls(auto, mobj, config, input_string)
+
+        return cls(auto, mobj, config, input_string, json_object)
 
     @classmethod
     def validate_json(cls, json_object: dict) -> None:
@@ -152,7 +146,9 @@ class DFA_Manager:
             sequence.append(
                 AnimationGroup(
                     self.mobj["text"].RemoveOneCharacter(),
-                    self.mobj["dfa"].transition_animation(self.current_state, next_state)
+                    self.mobj["dfa"].transition_animation(self.current_state, next_state),
+                    self.mobj["transition_table"].MoveToNextTransition()
+                            #   play(self.table.MoveToNextTransition())
                 )
             )
             self.mobj["dfa"].remove_flag(self.current_state, "c")

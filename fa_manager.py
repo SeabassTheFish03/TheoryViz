@@ -39,11 +39,12 @@ class DFA_Manager:
                 highlight_color=config["current_state_color"],
                 shadow_color=config["text_shadow_color"]
             ),
-            "transition_table": AnimateTransitionTable(json_object, input_string)
+            "transition_table": AnimateTransitionTable(json_object, input_string) #if next to DFA, don't have initial arrow?
         })
 
-        self.mobj["dfa"].move_to([-4, 0, 0])
+        self.mobj["dfa"].move_to([-4, 0, 0]) #MAGIC NUMBER
         self.mobj["text"].next_to(self.mobj["dfa"], UP)
+        self.mobj["transition_table"].scale(.7)#config["table"]["scale"]) #MAGIC NUMBER RIGHT NOW
         self.mobj["transition_table"].next_to(self.mobj["dfa"], RIGHT)
 
         self.current_state = self.auto.initial_state
@@ -145,10 +146,9 @@ class DFA_Manager:
             next_state = self.dfa._get_next_current_state(self.current_state, self.mobj["text"].peek_next_letter())
             sequence.append(
                 AnimationGroup(
+                    self.mobj["transition_table"].MoveToNextTransition(),
                     self.mobj["text"].RemoveOneCharacter(),
-                    self.mobj["dfa"].transition_animation(self.current_state, next_state),
-                    self.mobj["transition_table"].MoveToNextTransition()
-                            #   play(self.table.MoveToNextTransition())
+                    self.mobj["dfa"].transition_animation(self.current_state, next_state)
                 )
             )
             self.mobj["dfa"].remove_flag(self.current_state, "c")

@@ -35,9 +35,9 @@ class DFA_Manager:
             "dfa": mobj,
             "text": ProcessText(
                 input_string,
-                text_color=config["vertex_color"],
-                highlight_color=config["current_state_color"],
-                shadow_color=config["text_shadow_color"]
+                text_color=config["text"]["color"],
+                highlight_color=config["theory"]["current_state_color"],
+                shadow_color=config["text"]["shadow_color"]
             ),
             "transition_table": AnimateTransitionTable(json_object, input_string)
         })
@@ -82,8 +82,6 @@ class DFA_Manager:
             allow_partial=allow_partial
         )
 
-        #use the json instead of the file name
-
         edges_with_options = cls._json_to_mobj_edges(json_object["transitions"])
 
         mobj_options = {
@@ -108,7 +106,6 @@ class DFA_Manager:
             visual_config=config,
             options=mobj_options
         )
-
 
         return cls(auto, mobj, config, input_string, json_object)
 
@@ -148,7 +145,7 @@ class DFA_Manager:
                     self.mobj["text"].RemoveOneCharacter(),
                     self.mobj["dfa"].transition_animation(self.current_state, next_state),
                     self.mobj["transition_table"].MoveToNextTransition()
-                            #   play(self.table.MoveToNextTransition())
+                    #   play(self.table.MoveToNextTransition())
                 )
             )
             self.mobj["dfa"].remove_flag(self.current_state, "c")

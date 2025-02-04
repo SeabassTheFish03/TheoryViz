@@ -23,7 +23,7 @@ class SceneToShow(Scene):
             self.fa = TM_Manager.from_json(fa_json, config=self.config, input_string=in_string)
 
     def construct(self):
-        self.camera.background_color = self.config["background_color"]
+        self.camera.background_color = self.config["scene"]["background_color"]
         self.add(self.fa.mobj)
 
 

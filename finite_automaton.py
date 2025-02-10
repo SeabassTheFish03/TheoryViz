@@ -5,7 +5,7 @@ __all__ = {
 
 # Standard Lib
 from copy import deepcopy
-from math import tau
+from math import tau, pi
 
 # Dependencies
 import numpy as np
@@ -40,18 +40,18 @@ class LabeledCurvedArrow(CurvedArrow):
         start_point = np.array([around.get_left()[0] - buffer, around.get_center()[1], around.get_center()[2]])
         end_point = np.array([around.get_right()[0] + buffer, around.get_center()[1], around.get_center()[2]])
 
-        label_point = (start_point + end_point) / 2 - np.array([0, 2 * around.height, 0])
-
-        super().__init__(start_point, end_point, angle=tau * 2 / 3, **kwargs)
-
-        self.around = around
+        self.label_point = (start_point + end_point) / 2 - np.array([0, 2 * around.height, 0])
 
         self.label = Label(
             label=label,
             label_config=config.get("label", dict()),
             box_config=config.get("box", None),
             frame_config=config.get("frame", None)
-        ).move_to(label_point)
+        ).move_to(self.label_point).scale(config["font_size"] / 48)
+
+        super().__init__(start_point, end_point, angle=tau * 2 / 3, **kwargs)
+
+        self.around = around
 
         self.add(self.label)
 
@@ -59,7 +59,9 @@ class LabeledCurvedArrow(CurvedArrow):
         if about_point is None:
             about_point = self.around.get_center()
 
+        self.remove(self.label)
         super().rotate(angle, axis, about_point, **kwargs)
+        self.add(self.label)
         return self
 
 
@@ -263,13 +265,16 @@ class FiniteAutomaton(DiGraph):
                     box_config=this_edge_config["label"]["box"],
                     frame_config=this_edge_config["label"]["frame"],
                 ).shift(offset)
+
+                for label in [x for x in self.edges[(u, v)].submobjects if isinstance(x, Label)]:
+                    label.scale(this_edge_config["label"]["font_size"] / 48)
             else:
                 edge_label = labels.get((u, u), str((u, u)))
 
                 this_edge_config = deepcopy(general_edge_config)
                 this_edge_config.update(specific_edge_config.get((u, u), dict()))
 
-                self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config["label"])
+                self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config["label"]).rotate(-1 * angle_between(self[u].get_center(), self.vcenter()), axis=[0, 0, 1])
 
         for (u, v), edge in self.edges.items():
             try:

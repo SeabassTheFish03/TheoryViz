@@ -12,14 +12,14 @@ stroke_color = "white"
 
 [graph.vertex.label]
 color = "black"
-font_size = 30
+font_size = 40
 
 [graph.edge]
 color = "white"
 
 [graph.edge.label]
 label_position = 0.4  # Some float between 0 and 1, how far along the line is the label?
-font_size = 30
+font_size = 20
 
 [graph.edge.label.label]
 color = "white"

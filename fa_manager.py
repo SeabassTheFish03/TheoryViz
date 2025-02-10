@@ -202,7 +202,7 @@ class TM_Manager:
                 write = action[1]
                 move = action[2]
 
-                label = f"${symbol} \\to {write},\\ {move}$"  # LaTeX format
+                label = f"{symbol} \\to {write},\\ {move}"  # MathTeX format
                 if (start, end) in edges:
                     # An edge already exists, but with a different symbol
                     edges[(start, end)]["label"] += f"\\\\{label}"

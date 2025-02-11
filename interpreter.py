@@ -6,8 +6,6 @@ from pathlib import Path
 
 from manim.scene.scene import Scene
 
-from manim.scene.scene import Scene
-
 # NOTE: This shouldn't run ridiculously slow, but a potential speedup
 #   I see is running each LOAD instruction concurrently.
 
@@ -30,8 +28,8 @@ def read_file(pathobj, env):
     with pathobj.open() as f:
         lines = f.readlines()
 
-    for line in lines:
-        triageLine(line, env)
+    for i, line in enumerate(lines):
+        triageLine(line, env, i)
 
 
 def load_from_file(pathobj, varname, scene):
@@ -39,25 +37,27 @@ def load_from_file(pathobj, varname, scene):
         rawJson = json.loads(f.read())
 
     # I want to raise a KeyError if "type" isn't there, hence no .get()
-    if rawJson["type"].lower() == "dfa":
-        created = DFA_Manager.from_json(rawJson)
-    elif rawJson["type"].lower() == "nfa":
-        created = NFA_Manager.from_json(rawJson)
-    elif rawJson["type"].lower() == "tm":
-        created = TM_Manager.from_json(rawJson)
-    else:
-        raise TypeError(
-            f'JSON claims type {rawJson["type"]}, which is not a valid type.'
-        )
+    match rawJson["type"].lower():
+        case "dfa":
+            created = DFA_Manager.from_json(rawJson)
+        case "nfa":
+            created = NFA_Manager.from_json(rawJson)
+        case "tm":
+            created = TM_Manager.from_json(rawJson)
+        case _:
+            raise TypeError(
+                f'JSON claims type {rawJson["type"]}, which is not a valid type.'
+            )
 
-    scene.managers["varname"] = created
+    scene.managers[varname] = created
 
 
-def triageLine(line, scene):
+def triageLine(line, scene, line_no):
     tokens = line.split(" ")
 
     if line.startswith("LOAD "):
-        assert tokens[-2] == "AS", "Malformed Command: Missing or mistyped AS keyword"
+        if tokens[-2] != "AS":
+            raise SyntaxError(f"Line {line_no}:\n\tMalformed 'AS' command")
 
         # Theoretically this should allow for spaces in the filename
         filename = " ".join(tokens[1:-2])
@@ -72,17 +72,20 @@ def triageLine(line, scene):
     elif line.startsWith("SHOW "):
         # Since variable names can't have spaces, have to make sure
         #  no spaces made it into the query
-        assert len(tokens) == 2, f"Too many arguments: {len(tokens)}, expected 2"
+        if len(tokens) != 2:
+            raise SyntaxError(f"Line {line_no}:\n\tToo many arguments: {len(tokens)}, expected 2")
 
         # Possible KeyError, but we would want that to fail anyways
         scene.mobjects[tokens[1]]["show"] = True
     elif line.startswith("MOVE "):
-        assert tokens[2] == "TO", "Malformed Command: Missing or mistyped TO keyword"
+        if tokens[2] != "TO":
+            raise SyntaxError(f"Line {line_no}:\n\tMalformed Command: Missing or mistyped TO keyword")
 
         # Now parsing the coords
         coords = "".join(tokens[3:]).split(",")
 
-        assert len(coords) == 2, f"Malformed coordinates passed: got {len(coords)}, expected 2"
+        if len(coords) != 2:
+            raise SyntaxError(f"Line {line_no}:\n\tMalformed coordinates passed: got {len(coords)}, expected 2")
 
         coords = [float(c) for c in coords]
 
@@ -111,4 +114,7 @@ if __name__ == "__main__":
 
     scene = OutputScene()
 
-    read_file(infile, scene)
+    try:
+        read_file(infile, scene)
+    except SyntaxError as e:
+        raise SyntaxError(f"Viz file {str(infile)}:\n\t{str(e)}")

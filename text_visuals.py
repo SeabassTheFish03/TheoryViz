@@ -6,7 +6,7 @@ __all__ = [
 from manim.animation.animation import Animation
 from manim.animation.composition import AnimationGroup
 from manim.animation.creation import Unwrite
-from manim.animation.transform import FadeToColor, Transform
+from manim.animation.transform import FadeToColor, Transform, ReplacementTransform
 from manim.mobject.geometry.polygram import Rectangle
 from manim.mobject.table import Table
 from manim.mobject.text.tex_mobject import MathTex
@@ -68,7 +68,6 @@ class ProcessText(Text):
             return Unwrite(self[self.textptr])
 
 
-# TODO: Make this a descendant of Table
 class TuringTape(Table):
     def __init__(
         self,
@@ -84,36 +83,46 @@ class TuringTape(Table):
             [(list(text) + [self.blank])],
             element_to_mobject=Text,
             element_to_mobject_config={
-                "color": config["edge_text_color"]
+                "color": config["text"]["color"],
+                "font_size": config["text"]["font_size"],
             },
             line_config={
-                "color": config["table_border_color"]
+                "color": config["table"]["border_color"]
             },
             include_outer_lines=True
         )
 
         self.indicator = self.get_cell(
             (1, (self.index + 1) % len(self.text)),
-            color=config["current_state_color"]
+            color=config["theory"]["current_state_color"]
         )
+        self.visual_config = config
         self.add(self.indicator)
 
-        # WIP
-        left_end = Rectangle().move_to(self.get_cell((1, 1)))
+    def animate_update(self, changes):
+        write = changes[1]
+        direction = changes[2]
+        if direction == "L":
+            self.index -= 1 if self.index > 0 else 0
+        elif direction == "R":
+            self.index += 1 if self.index < len(self.text) - 1 else 0
+        else:
+            raise ValueError("Direction invalid")
 
-    def animate_change_highlighted(self, write, new_index: int) -> Animation:
-        if new_index >= len(self.text):
-            raise ValueError(f"Index {new_index} out of range for text {self.text}")
+        new_entry = Text(write).move_to(
+            self.get_entries((1, self.index + 1))
+        ).scale(self.visual_config["text"]["font_size"] / 48)  # 48 is the default font size. font_size argument doesn't work, so this is the best we can do.
 
-        current_entry = self.get_entries(pos=(1, self.index + 1))
-        target_mobj = MathTex(write).move_to(current_entry)
+        if write == self.blank:
+            write = " "
 
-        self.index = new_index
         return AnimationGroup(
             self.indicator.animate.move_to(
-                self.get_cell((1, new_index + 1))
-            ),
-            Transform(current_entry, target_mobj)
+                self.get_cell((1, self.index + 1))),
+            Transform(
+                self.get_entries((1, self.index + 1)),
+                new_entry
+            )
         )
 
     def animate_left(self, write):

@@ -1,9 +1,11 @@
 __all__ = {
+    "LabeledCurvedArrow",
     "FiniteAutomaton"
 }
 
 # Standard Lib
 from copy import deepcopy
+from math import tau, pi
 
 # Dependencies
 import numpy as np
@@ -12,11 +14,11 @@ import numpy as np
 from manim.animation.indication import Indicate
 from manim.animation.composition import Succession
 from manim.mobject.graph import DiGraph
-from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot
-from manim.mobject.geometry.labeled import LabeledLine
+from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot, Dot
+from manim.mobject.geometry.labeled import LabeledLine, Label
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
-from manim.mobject.text.tex_mobject import Tex, MathTex
+from manim.mobject.text.tex_mobject import MathTex, Tex
 from manim.mobject.types.vectorized_mobject import VGroup, VDict
 
 # Internal
@@ -31,6 +33,36 @@ def angle_between(v1, v2):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+
+class LabeledCurvedArrow(CurvedArrow):
+    def __init__(self, label: str, around=Dot(), buffer=0, config=dict(), **kwargs):
+        start_point = np.array([around.get_left()[0] - buffer, around.get_center()[1], around.get_center()[2]])
+        end_point = np.array([around.get_right()[0] + buffer, around.get_center()[1], around.get_center()[2]])
+
+        self.label_point = (start_point + end_point) / 2 - np.array([0, 2 * around.height, 0])
+
+        self.label = Label(
+            label=label,
+            label_config=config.get("label", dict()),
+            box_config=config.get("box", None),
+            frame_config=config.get("frame", None)
+        ).move_to(self.label_point).scale(config["font_size"] / 48)
+
+        super().__init__(start_point, end_point, angle=tau * 2 / 3, **kwargs)
+
+        self.around = around
+
+        self.add(self.label)
+
+    def rotate(self, angle, axis, about_point=None, **kwargs):
+        if about_point is None:
+            about_point = self.around.get_center()
+
+        self.remove(self.label)
+        super().rotate(angle, axis, about_point, **kwargs)
+        self.add(self.label)
+        return self
 
 
 class FiniteAutomaton(DiGraph):
@@ -91,49 +123,47 @@ class FiniteAutomaton(DiGraph):
     ) -> None:
 
         # Setting up the vertex config
-        _vertex_config: dict = self._vertex_config_from_bigconfig(visual_config)
+        _vertex_config: dict = visual_config["graph"]["vertex"]
         _vertex_labels: dict = dict()
         _flags: dict = dict()
 
         # Must handle labels and flags
         if "vertices" in options:
             for vertex, opts in options["vertices"].items():
-                _vertex_config[vertex] = deepcopy(opts)
                 if "label" in opts:
-                    del _vertex_config[vertex]["label"]
                     _vertex_labels[vertex] = MathTex(
                         opts["label"],
-                        color=visual_config["vertex_text_color"],
-                        font_size=visual_config["font_size"]
+                        color=_vertex_config["label"]["color"],
+                        font_size=_vertex_config["label"]["font_size"]
                     )
                 if "flags" in opts:
-                    _flags[vertex] = _vertex_config[vertex].pop("flags")
+                    _flags[vertex] = opts.pop("flags")
                 else:
                     _vertex_labels[vertex] = MathTex(
                         str(vertex),
-                        color=visual_config["vertex_text_color"],
-                        font_size=visual_config["font_size"]
+                        color=_vertex_config["label"]["color"],
+                        font_size=_vertex_config["label"]["font_size"]
                     )
 
         # Setting up the edge config
-        _edge_config: dict = self._edge_config_from_bigconfig(visual_config)
+        _edge_config: dict = visual_config["graph"]["edge"]
         _edge_labels: dict = dict()
 
         if "edges" in options:
             for (start, end), opts in options["edges"].items():
-                _edge_config[(start, end)] = deepcopy(opts)
                 if "label" in opts:
-                    del _edge_config[(start, end)]["label"]
                     _edge_labels[(start, end)] = opts["label"]
                 else:
                     _edge_labels[(start, end)] = str((start, end))
 
-        _graph_config = self._graph_config_from_bigconfig(visual_config)
+        _graph_config = visual_config["graph"]
+        _graph_config = {key: value for key, value in _graph_config.items() if not isinstance(value, dict)}
 
         # We let DiGraph (really, GenericGraph) do most of the heavy lifting.
         # When it accepts configs, it takes global options (i.e. options that apply to every vertex/edge)
         #   and override options keyed to a specific vertex/edge name (which override the global ones).
         # That's what the above was for, trimming out any specific things and making sure the input is sanitary.
+        """
         _general_vertex_config = dict()
         _specific_vertex_config = dict()
         for k, v in _vertex_config.items():
@@ -141,6 +171,7 @@ class FiniteAutomaton(DiGraph):
                 _specific_vertex_config[k] = v
             else:
                 _general_vertex_config[k] = v
+        """  # We're putting this feature on hold for now
 
         super().__init__(
             vertices,
@@ -148,7 +179,7 @@ class FiniteAutomaton(DiGraph):
             vertex_type=LabeledDot,
             edge_type=LabeledLine,
             labels=_vertex_labels,  # This refers specifically to vertex labels
-            vertex_config=_general_vertex_config,
+            vertex_config=_vertex_config,
             edge_config=_edge_config,
             **_graph_config
         )
@@ -168,125 +199,12 @@ class FiniteAutomaton(DiGraph):
 
         self.flags = _flags
         self.visual_config = visual_config
+        self.vertex_config = _vertex_config
         self._init_vertices()
 
     def __repr__(self) -> str:
         return f"Directed Graph with labeled edges with\
             {len(self.vertices)} vertices and {len(self.edges)} edges"
-
-    def _vertex_config_from_bigconfig(self, config: dict) -> dict:
-        # These keys in config.toml map to these keys in Manim
-        toml_to_mobject: dict[str, str] = {
-            "vertex_color": "fill_color",
-            "vertex_stroke_color": "color",
-            "vertex_radius": "radius"
-        }
-        # These are the kwargs that Manim understands and affect the appearance of the vertex
-        mobject_keys: list[str] = [
-            # From LabeledDot
-            "radius",
-            # From Dot
-            "point",
-            "stroke_width",
-            "fill_opacity",
-            "color",
-            # From Circle
-            # From Arc
-            # From TipableVMobject
-            # From VMobject
-            "fill_color",
-            "stroke_color",
-            "stroke_opacity",
-            "background_stroke_color",
-            "background_stroke_opacity",
-            "background_stroke_width",
-            "sheen_factor",
-            "sheen_direction",
-        ]
-
-        vertex_config: dict = dict()
-        for key, value in config.items():
-            # If it's in there, translate, else let it pass
-            key = toml_to_mobject.get(key, key)
-
-            if key in mobject_keys:
-                vertex_config[str(key)] = value
-        return vertex_config
-
-    def _edge_config_from_bigconfig(self, config: dict) -> dict:
-        toml_to_mobject: dict[str, str] = {
-            "edge_color": "color",
-            "edge_text_color": "label_color",
-            "edge_label_position": "label_position",
-            "edge_label_frame": "label_frame",
-            "edge_label_frame_fill": "frame_fill_color",
-            "edge_label_frame_opacity": "frame_fill_opacity",
-        }
-
-        # These are the kwargs that Manim understands and affect the appearance of the edge
-        mobject_keys: list[str] = [
-            # From LabeledLine
-            "color",
-            "label_color",
-            "font_size",
-            "label_position",
-            "label_frame",
-            "frame_fill_color",
-            "frame_fill_opacity",
-            # From Line
-            # From TipableVMobject
-            # From VMobject
-            "fill_color",
-            "stroke_color",
-            "stroke_opacity",
-            "background_stroke_color",
-            "background_stroke_opacity",
-            "background_stroke_width",
-            "sheen_factor",
-            "sheen_direction",
-        ]
-
-        edge_config: dict = dict()
-        for key, value in config.items():
-            # If it's in there, translate, else let it pass
-            key = toml_to_mobject.get(key, key)
-
-            if key in mobject_keys:
-                edge_config[str(key)] = value
-        return edge_config
-
-    def _graph_config_from_bigconfig(self, config: dict) -> dict:
-        toml_to_mobject: dict[str, str] = {
-            "layout_type": "layout",
-            "root_vertex": 0,
-            "vertex_text_color": "label_fill_color",
-        }
-
-        # These are the kwargs that Manim understands and affect the appearance of the edge
-        mobject_keys: list[str] = [
-            # From GenericGraph
-            "label_fill_color",
-            "layout",
-            "layout_scale",
-            # From VMobject
-            "fill_color",
-            "stroke_color",
-            "stroke_opacity",
-            "background_stroke_color",
-            "background_stroke_opacity",
-            "background_stroke_width",
-            "sheen_factor",
-            "sheen_direction",
-        ]
-
-        graph_config: dict = dict()
-        for key, value in config.items():
-            # If it's in there, translate, else let it pass
-            key = toml_to_mobject.get(key, key)
-
-            if key in mobject_keys:
-                graph_config[str(key)] = value
-        return graph_config
 
     def vcenter(self) -> np.ndarray:
         """
@@ -303,86 +221,9 @@ class FiniteAutomaton(DiGraph):
         edges: dict[(str, str), LabeledLine],
         labels: dict[(str, str), str]
     ) -> None:
-        tmp_edge_conf: dict = deepcopy(self._edge_config)
-
         self.edges = dict()
         for (u, v) in edges:
-            if u != v:
-                if (v, u) in edges:
-                    vec1 = self[v].get_center() - self[u].get_center()
-                    vec2 = np.cross(vec1, np.array([0, 0, 1]))
-
-                    length = np.linalg.norm(vec2)
-                    offset = 0.1 * vec2 / length
-                else:
-                    offset = np.array([0, 0, 0])
-
-                edge_label = tmp_edge_conf[(u, v)].pop("label", "why??")
-                if edge_label == "":
-                    edge_label = Tex("\\epsilon")
-                else:
-                    edge_label = Tex(edge_label)
-                self.edges[(u, v)] = LabeledLine(
-                    label=edge_label,
-                    start=self[u],
-                    end=self[v],
-                    **tmp_edge_conf[(u, v)]
-                ).shift(offset)
-            else:
-                edge_label = tmp_edge_conf[(u, u)].pop("label", "g")
-
-                between = angle_between(self[u].get_center() - self.vcenter(), np.array([1, 0, 0]))
-                if self[u].get_center()[1] < self.vcenter()[1]:
-                    between *= -1
-
-                loop = CurvedArrow(
-                    start_point=self[u].get_top(),
-                    end_point=self[u].get_bottom(),
-                    angle=-4,
-                    z_index=-1,
-                    **tmp_edge_conf[(u, u)]
-                )
-                label_mobject = Tex(
-                    edge_label,
-                    fill_color="white",
-                    font_size=20,  # TODO: Magic number
-                ).move_to(loop.get_center()).shift(
-                    np.array([0.5, 0, 0])
-                ).rotate(-1 * between)
-
-                label_background = BackgroundRectangle(
-                    label_mobject,
-                    buff=0.05,
-                    color="black",
-                    fill_opacity=1,
-                    stroke_width=0.5,
-                ).rotate(-1 * between)
-                label_frame = SurroundingRectangle(
-                    label_mobject,
-                    buff=0.05,
-                    color="white",
-                    stroke_width=0.5
-                ).rotate(-1 * between)
-
-                label_group = VGroup(
-                    loop,
-                    label_frame,
-                    label_background,
-                    label_mobject
-                )
-                self.edges[(u, u)] = VGroup(label_group).rotate(
-                    between,
-                    about_point=self[u].get_center()
-                )
-
-        for (u, v), edge in self.edges.items():
-            try:
-                if isinstance(edge, LabeledLine):
-                    edge.add_tip(**self._tip_config[(u, v)])
-            except TypeError:
-                print("Unexpected tip type!")
-                print(self._tip_config)
-                exit()
+            self.edges[(u, v)] = Dot()
 
     def _repopulate_edge_dict(
         self,
@@ -413,64 +254,27 @@ class FiniteAutomaton(DiGraph):
 
                 # An empty label is different from one that doesn't exist
                 if edge_label == "":
-                    edge_label = MathTex("\\epsilon")
-                else:
-                    edge_label = Tex(edge_label)
+                    edge_label = "\\epsilon"
+
                 self.edges[(u, v)] = LabeledLine(
                     label=edge_label,
                     start=self[u],
                     end=self[v],
-                    **this_edge_config
+                    label_position=this_edge_config["label"]["label_position"],
+                    label_config=this_edge_config["label"]["label"],
+                    box_config=this_edge_config["label"]["box"],
+                    frame_config=this_edge_config["label"]["frame"],
                 ).shift(offset)
+
+                for label in [x for x in self.edges[(u, v)].submobjects if isinstance(x, Label)]:
+                    label.scale(this_edge_config["label"]["font_size"] / 48)
             else:
                 edge_label = labels.get((u, u), str((u, u)))
 
                 this_edge_config = deepcopy(general_edge_config)
                 this_edge_config.update(specific_edge_config.get((u, u), dict()))
 
-                between = angle_between(self[u].get_center() - self.vcenter(), np.array([1, 0, 0]))
-                if self[u].get_center()[1] < self.vcenter()[1]:
-                    between *= -1
-
-                loop = CurvedArrow(
-                    start_point=self[u].get_top(),
-                    end_point=self[u].get_bottom(),
-                    angle=-4,
-                    z_index=-1,
-                    color=this_edge_config["color"]
-                )
-                label_mobject = Tex(
-                    edge_label,
-                    fill_color=this_edge_config["label_color"],
-                    font_size=this_edge_config["font_size"] / 2,
-                ).move_to(loop.get_center()).shift(
-                    np.array([0.5, 0, 0])
-                ).rotate(-1 * between)
-
-                label_background = BackgroundRectangle(
-                    label_mobject,
-                    buff=0.05,
-                    color=this_edge_config["frame_fill_color"],
-                    fill_opacity=this_edge_config["frame_fill_opacity"],
-                    stroke_width=0.5,
-                ).rotate(-1 * between)
-                label_frame = SurroundingRectangle(
-                    label_mobject,
-                    buff=0.05,
-                    color=this_edge_config["label_color"],
-                    stroke_width=0.5
-                ).rotate(-1 * between)
-
-                label_group = VGroup(
-                    loop,
-                    label_frame,
-                    label_background,
-                    label_mobject,
-                )
-                self.edges[(u, u)] = label_group.rotate(
-                    between,
-                    about_point=self[u].get_center()
-                )
+                self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config["label"]).rotate(-1 * angle_between(self[u].get_center(), self.vcenter()), axis=[0, 0, 1])
 
         for (u, v), edge in self.edges.items():
             try:
@@ -485,32 +289,33 @@ class FiniteAutomaton(DiGraph):
         for vertex, opts in self.flags.items():
             if "i" in opts:
                 ray = self.vertices[vertex].get_center() - self.vcenter()
-                if self.visual_config["layout_scale"] > 2:
-                    fake_start = ray * 8 / self.visual_config["layout_scale"]
+                if self.visual_config["graph"]["layout_scale"] > 2:
+                    fake_start = ray * 8 / self.visual_config["graph"]["layout_scale"]
                 else:
                     fake_start = ray * 2
                 start_arrow: Arrow = Arrow(
                     start=fake_start,
                     end=ray * 1,
-                    color=self.visual_config["vertex_color"],
+                    color=self.vertex_config["color"],
                     stroke_width=5
                 )
                 self.vertices[vertex]["accessories"].add(start_arrow)
             if "f" in opts:
                 ring = Annulus(
-                    inner_radius=self.vertices[vertex]["base"].width + 0.1 * self.visual_config["layout_scale"] / 2,
-                    outer_radius=self.vertices[vertex]["base"].width + 0.2 * self.visual_config["layout_scale"] / 2,
+                    inner_radius=self.vertices[vertex]["base"].width + 0.1 * self.visual_config["graph"]["layout_scale"] / 2,
+                    outer_radius=self.vertices[vertex]["base"].width + 0.2 * self.visual_config["graph"]["layout_scale"] / 2,
                     z_index=-1,
-                    fill_color=self.visual_config["vertex_color"]
+                    fill_color=self.vertex_config["color"]
                 ).move_to(
                     self.vertices[vertex]["base"].get_center()
-                ).scale(1 / self.visual_config["layout_scale"])
+                ).scale(1 / self.visual_config["graph"]["layout_scale"])
 
                 self.vertices[vertex]["accessories"].add(ring)
 
         self.add(*self.vertices.values())
 
     def _redraw_vertices(self) -> None:
+        """
         for vertex, opts in self.flags.items():
             # The initial and final states should not change for the duration of the animation,
             #   so they are not handled here. See _init_vertices()
@@ -520,6 +325,7 @@ class FiniteAutomaton(DiGraph):
             else:
                 self.vertices[vertex]["base"].set_color(self.visual_config["vertex_color"])
                 self.vertices[vertex]["base"].submobjects[0].set_color(self.visual_config["vertex_text_color"])
+        """
 
         self.remove(*self.vertices.values())
         self.add(*self.vertices.values())
@@ -552,7 +358,7 @@ class FiniteAutomaton(DiGraph):
                 edge.set_points_by_ends(
                     graph[u]["base"].get_center() + np.dot(offset, np.array([1, 0, 0])),
                     graph[v]["base"].get_center() + np.dot(offset, np.array([0, 1, 0])),
-                    buff=self.visual_config["vertex_radius"],
+                    buff=self.vertex_config["radius"],
                     path_arc=0
                 )
                 edge.add_tip(tip)
@@ -571,8 +377,9 @@ class FiniteAutomaton(DiGraph):
         self.flags[state].remove(flag)
         self._redraw_vertices()
 
-    def transition_animation(self, start: LabeledDot, end: LabeledDot) -> Succession:
+    def transition_animation(self, start: str, end: str) -> Succession:
         assert (start, end) in self.edges, f"Transition does not exist: {(start, end)}"
+        print(f"Successful transition: ({start}, {end})")
 
         if start != end:
             wiggle_vector = np.cross(self.edges[(start, end)].get_unit_vector(), np.array([0, 0, 1]))

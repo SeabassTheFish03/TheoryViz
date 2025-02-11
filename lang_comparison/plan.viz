@@ -1,0 +1,4 @@
+LOAD "fa_vault/sample_dfa.json" AS thing
+ATTRIBUTE pos OF thing IS {x: 0, y: 0}
+MOVE thing TO {x: 1, y: 1}
+MOVE thing BY {x: -1, y: -1}

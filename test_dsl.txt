@@ -1,2 +1,0 @@
-LOAD sample_dfa.json as mydfa
-SHOW mydfa

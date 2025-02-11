@@ -20,10 +20,10 @@ class SceneToShow(Scene):
         if fa_json["fa_type"] == "dfa":
             self.fa = DFA_Manager.from_json(fa_json, config=self.config, input_string=in_string)
         elif fa_json["fa_type"] == "tm":
-            self.fa = TM_Manager.from_json(fa_json, config=self.config, initial_tape=in_string)
+            self.fa = TM_Manager.from_json(fa_json, config=self.config, input_string=in_string)
 
     def construct(self):
-        self.camera.background_color = self.config["background_color"]
+        self.camera.background_color = self.config["scene"]["background_color"]
         self.add(self.fa.mobj)
 
 

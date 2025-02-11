@@ -37,7 +37,6 @@ class DisplayTransitionTable(Table):
         # create the initial arrow
         follower = self.get_cell((state_index, 1))
         Initial_arrow = Arrow(color=YELLOW,stroke_width=20,buff=0.6, max_stroke_width_to_length_ratio=20, max_tip_length_to_length_ratio=0.7).next_to(follower, LEFT)
-        
         self.add(Initial_arrow)
 
         #create final state box
@@ -51,6 +50,7 @@ class DisplayTransitionTable(Table):
                     finalstatebox = self.get_cell((self.row_labels.index(label)+2, 1), color=WHITE)
                     copyoffinalstatebox = finalstatebox.scale(0.9)
                     self.add(copyoffinalstatebox)
+
 
 class AnimateTransitionTable(DisplayTransitionTable):
     def __init__(self, fa_filename, input_string=''):
@@ -69,8 +69,16 @@ class AnimateTransitionTable(DisplayTransitionTable):
         state_index = list(self.json["states"]).index(self.json["initial_state"]) + 2 # rawJson
         # have to have input string
         trans_index = list(self.json["input_symbols"]).index(self.input_string[0]) + 2 # rawJson
+
+        stateRow = SurroundingRectangle(self.get_rows()[state_index-1], buff = MED_LARGE_BUFF)
+        self.add(stateRow) #add rectangle around the given states (row)
+        self.stateRow = stateRow
+
+        transitionColumn = SurroundingRectangle(self.get_columns()[trans_index-1], buff = MED_LARGE_BUFF)
+        self.add(transitionColumn) #add rectangle around state (column)
+        self.transitionColumn = transitionColumn
+
         follower = self.get_cell((state_index, trans_index), color=YELLOW)
-        # self.play(Create(follower))
         self.add(follower) #follower box added - movement of this box is relegated to a different function
         self.follower = follower
 
@@ -81,40 +89,62 @@ class AnimateTransitionTable(DisplayTransitionTable):
 
         self.stringOfInput.move_to(UP*3.5) #moves to the top...again, don't need this later
 
-        current_state = self.json["initial_state"] # rawJson
-        self.current_state = (current_state)
-
-        # this is not initializing stuff - new definition required
-    def MoveToNextTransition(self):
         char = self.input_string[0]
         self.input_string = self.input_string[1:]
 
-        if char in self.json["transitions"][self.current_state]: # rawJson
+        first_state = self.json["initial_state"]
+        next_state = self.json["transitions"][first_state][char] # rawJson
+
+        self.current_state = (next_state)
+
+
+    def MoveToNextTransition(self):
+        #if length is 0, then new follower and transition column = None, update state as normal I think...
+        if(len(self.input_string) != 0):
+            char = self.input_string[0]
+            self.input_string = self.input_string[1:]
+
+            if char in self.json["transitions"][self.current_state]: # rawJson
+                state_index = list(self.json["states"]).index(self.current_state) + 2 # rawJson
+                trans_index = list(self.json["input_symbols"]).index(char) + 2 # rawJson
+
+                new_follower = self.get_cell((state_index, trans_index), color=YELLOW)
+                next_state = self.json["transitions"][self.current_state][char] # rawJson
+
+                new_stateRow = SurroundingRectangle(self.get_rows()[state_index-1], buff = MED_LARGE_BUFF)
+                new_transitionColumn = SurroundingRectangle(self.get_columns()[trans_index-1], buff = MED_LARGE_BUFF)
+
+                self.current_state = next_state
+                animation = AnimationGroup(
+                    Transform(self.follower, new_follower),
+                    Transform(self.stateRow, new_stateRow),
+                    Transform(self.transitionColumn, new_transitionColumn),
+                    self.stringOfInput.RemoveOneCharacter()
+                )
+                self.stringOfInput.increment_letter()
+
+        else:
+            self.remove(self.follower)
+            # new_follower = None
+            # new_transitionColumn = None
+            self.remove(self.transitionColumn)
             state_index = list(self.json["states"]).index(self.current_state) + 2 # rawJson
-            trans_index = list(self.json["input_symbols"]).index(char) + 2 # rawJson
-
-            new_follower = self.get_cell((state_index, trans_index), color=YELLOW)
-            next_state = self.json["transitions"][self.current_state][char] # rawJson
-
-            self.current_state = next_state
-
+            new_stateRow = SurroundingRectangle(self.get_rows()[state_index-1], buff = MED_LARGE_BUFF)
             animation = AnimationGroup(
-                Transform(self.follower, new_follower),
+                Transform(self.stateRow, new_stateRow),
+                Uncreate(self.follower),
+                Uncreate(self.transitionColumn),
                 self.stringOfInput.RemoveOneCharacter()
             )
             self.stringOfInput.increment_letter()
 
-
-            return (animation)
+        return (animation)
+        
+        #highlight entire row and entire column
+        #box diffent color
+        #for the last state, the column disappears
         
         # transition table is delayed by one....
-
-            return AnimationGroup(
-                Transform(self.follower, new_follower)
-                # self.stringOfInput.RemoveOneCharacter(),
-                # self.stringOfInput.increment_letter()
-            )
-
 
 class testTransitionTable(Scene):
     def __init__(self, fa_filename, input_string=''):

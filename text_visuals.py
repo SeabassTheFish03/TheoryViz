@@ -83,18 +83,18 @@ class TuringTape(Table):
             [(list(text) + [self.blank])],
             element_to_mobject=Text,
             element_to_mobject_config={
-                "color": config["edge_text_color"],
-                "font_size": config["font_size"],
+                "color": config["text"]["color"],
+                "font_size": config["text"]["font_size"],
             },
             line_config={
-                "color": config["table_border_color"]
+                "color": config["table"]["border_color"]
             },
             include_outer_lines=True
         )
 
         self.indicator = self.get_cell(
             (1, (self.index + 1) % len(self.text)),
-            color=config["current_state_color"]
+            color=config["theory"]["current_state_color"]
         )
         self.visual_config = config
         self.add(self.indicator)
@@ -109,9 +109,9 @@ class TuringTape(Table):
         else:
             raise ValueError("Direction invalid")
 
-        new_entry = Text(write, font_size=self.visual_config["font_size"]).move_to(
+        new_entry = Text(write).move_to(
             self.get_entries((1, self.index + 1))
-        )
+        ).scale(self.visual_config["text"]["font_size"] / 48)  # 48 is the default font size. font_size argument doesn't work, so this is the best we can do.
 
         if write == self.blank:
             write = " "
@@ -119,7 +119,7 @@ class TuringTape(Table):
         return AnimationGroup(
             self.indicator.animate.move_to(
                 self.get_cell((1, self.index + 1))),
-            ReplacementTransform(
+            Transform(
                 self.get_entries((1, self.index + 1)),
                 new_entry
             )

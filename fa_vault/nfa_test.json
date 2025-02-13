@@ -1,0 +1,11 @@
+{
+	"fa_type": "nfa",
+	"states": ["1", "2"],
+	"input_symbols": ["a", "b"],
+	"transitions": {
+		"1": {"a": "2", "b": "1"},
+		"2": {"a": "1", "b": "2"}
+	},
+	"initial_state": "1",
+	"final_states": ["2"]
+}

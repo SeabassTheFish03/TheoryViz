@@ -228,8 +228,11 @@ class DFA_Manager:
         cls.validate_json(json_object)
         allow_partial = json_object.get("allow_partial", False)
 
-        config = {**default_config, **config}
+        # Config stuff
+        with open("default_config.toml", "rb") as f:
+            default_config = tomllib.load(f)
 
+        config = {**default_config, **config}
         auto = DFA(
             states=set(json_object["states"]),
             input_symbols=json_object["input_symbols"],

@@ -1,8 +1,20 @@
 import os
+import sys
+
+sys.path.append("..")
+import interpreter
 
 if __name__ == "__main__":
-    test = input("Select test protocol, or type '?' to see options: ")
+
+    test = input("Select test protocol filename, or type '?' to see options: ")
+
+    protocols = os.listdir("./dsl")
+    protocols.sort()
 
     if test.strip() == "?":
-        protocols = os.listdir("./protocols")
-        protocols.sort()
+        print("DSL Test Protocols:")
+        print("\n".join(["\t" + name for name in protocols]))
+    elif test in protocols:
+        interpreter.interpret("./dsl/" + test)
+    else:
+        print("Test not found. Please run again and type '?' to see the options")

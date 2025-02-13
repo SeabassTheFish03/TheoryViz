@@ -1,5 +1,6 @@
 # Standard Library
 import json
+import tomllib
 
 # Dependencies
 from automata.fa.dfa import DFA
@@ -39,12 +40,12 @@ class DFA_Manager:
                 highlight_color=config["theory"]["current_state_color"],
                 shadow_color=config["text"]["shadow_color"]
             ),
-            "transition_table": AnimateTransitionTable(json_object, input_string) #if next to DFA, don't have initial arrow?
+            "transition_table": AnimateTransitionTable(json_object, input_string)  # if next to DFA, don't have initial arrow?
         })
 
-        self.mobj["dfa"].move_to([-4, 0, 0]) #MAGIC NUMBER
+        self.mobj["dfa"].move_to([-4, 0, 0])  # MAGIC NUMBER
         self.mobj["text"].next_to(self.mobj["dfa"], UP)
-        self.mobj["transition_table"].scale(.7)#config["table"]["scale"]) #MAGIC NUMBER RIGHT NOW
+        self.mobj["transition_table"].scale(.7)  # config["table"]["scale"]) #MAGIC NUMBER RIGHT NOW
         self.mobj["transition_table"].next_to(self.mobj["dfa"], RIGHT)
 
         self.current_state = self.auto.initial_state
@@ -71,8 +72,13 @@ class DFA_Manager:
     def from_json(cls, json_object: dict, config: dict = dict(), input_string: str = ""):
         # Throws on failure
         cls.validate_json(json_object)
-
         allow_partial = json_object.get("allow_partial", False)
+
+        # Config stuff
+        with open("default_config.toml", "rb") as f:
+            default_config = tomllib.load(f)
+
+        config = {**config, **default_config}
 
         auto = DFA(
             states=set(json_object["states"]),

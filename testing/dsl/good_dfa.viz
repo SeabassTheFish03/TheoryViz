@@ -1,0 +1,2 @@
+LOAD "../fa_vault/sample_dfa.json" AS good_dfa
+PRINT "Good copy"

@@ -3,6 +3,8 @@ import sys
 import json
 from text_visuals import ProcessText
 
+# TODO: need to change the transition table to account for NFAs
+
 class DisplayTransitionTable(Table):
     def __init__(self, json, input_string=''): # json = fa_filename
         
@@ -78,7 +80,7 @@ class AnimateTransitionTable(DisplayTransitionTable):
         self.add(transitionColumn) #add rectangle around state (column)
         self.transitionColumn = transitionColumn
 
-        follower = self.get_cell((state_index, trans_index), color=YELLOW)
+        follower = self.get_cell((state_index, trans_index), color=GREEN)
         self.add(follower) #follower box added - movement of this box is relegated to a different function
         self.follower = follower
 
@@ -111,8 +113,8 @@ class AnimateTransitionTable(DisplayTransitionTable):
                 new_follower = self.get_cell((state_index, trans_index), color=YELLOW)
                 next_state = self.json["transitions"][self.current_state][char] # rawJson
 
-                new_stateRow = SurroundingRectangle(self.get_rows()[state_index-1], buff = MED_LARGE_BUFF)
-                new_transitionColumn = SurroundingRectangle(self.get_columns()[trans_index-1], buff = MED_LARGE_BUFF)
+                new_stateRow = SurroundingRectangle(self.get_rows()[state_index-1], buff = MED_SMALL_BUFF)
+                new_transitionColumn = SurroundingRectangle(self.get_columns()[trans_index-1], buff = MED_SMALL_BUFF)
 
                 self.current_state = next_state
                 animation = AnimationGroup(
@@ -129,7 +131,7 @@ class AnimateTransitionTable(DisplayTransitionTable):
             # new_transitionColumn = None
             self.remove(self.transitionColumn)
             state_index = list(self.json["states"]).index(self.current_state) + 2 # rawJson
-            new_stateRow = SurroundingRectangle(self.get_rows()[state_index-1], buff = MED_LARGE_BUFF)
+            new_stateRow = SurroundingRectangle(self.get_rows()[state_index-1], buff = MED_SMALL_BUFF)
             animation = AnimationGroup(
                 Transform(self.stateRow, new_stateRow),
                 Uncreate(self.follower),

@@ -17,8 +17,6 @@ class TransitionTable(Table):
 
         rows = []
 
-        self.starting_symbol = starting_symbol
-
         for state in self.states:
             new_row = []
             for sym in self.symbols:
@@ -38,11 +36,6 @@ class TransitionTable(Table):
                 "color": self.config["border_color"]
             }
         )
-
-        if len(self.starting_symbol) == 0:
-            start_index = (self.states.index(automaton.initial_state) + 2, 2)
-        else:
-            start_index = (self.states.index(automaton.initial_state) + 2, self.symbols.index(self.starting_symbol) + 2)
 
         for state in automaton.final_states:
             for i, cell in enumerate([row[0] for row in rows]):

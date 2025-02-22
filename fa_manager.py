@@ -8,10 +8,9 @@ from automata.tm.dtm import DTM
 from automata.tm.configuration import TMConfiguration
 from automata.tm.tape import TMTape
 
-from manim.mobject.types.vectorized_mobject import VDict
+from manim.mobject.types.vectorized_mobject import VDict, VGroup
 from manim.animation.composition import Succession, AnimationGroup
 from manim.constants import UP
-from manim.constants import RIGHT
 
 from jsonschema import validate
 
@@ -19,40 +18,93 @@ from jsonschema import validate
 from finite_automaton import FiniteAutomaton
 from text_visuals import ProcessText, TuringTape
 # from transition_table_mobject import DisplayTransitionTable
-from transition_table_mobject import AnimateTransitionTable
+# from transition_table_mobject import AnimateTransitionTable
 
 
 class DFA_Manager:
     def __init__(
         self,
-        auto: DFA,
-        mobj: FiniteAutomaton,
-        config: dict = dict(),
-        input_string: str = "",
-        json_object: dict = dict(),
+        config: dict
     ) -> None:
-        self.auto: DFA = auto
+        self.auto: DFA = None
         self.mobj: VDict = VDict({
-            "dfa": mobj,
-            "text": ProcessText(
-                input_string,
-                text_color=config["text"]["color"],
-                highlight_color=config["theory"]["current_state_color"],
-                shadow_color=config["text"]["shadow_color"]
-            ),
-            "transition_table": AnimateTransitionTable(json_object, input_string)  # if next to DFA, don't have initial arrow?
+            "dfa": VGroup(),
+            "text": VGroup(),
+            "table": VGroup()
+            # "transition_table": AnimateTransitionTable(json_object, input_string)  # if next to DFA, don't have initial arrow?
         })
+        self.input_string = ""
+        self.config = config
 
-        self.mobj["dfa"].move_to([-4, 0, 0])  # MAGIC NUMBER
-        self.mobj["text"].next_to(self.mobj["dfa"], UP)
-        self.mobj["transition_table"].scale(.7)  # config["table"]["scale"]) #MAGIC NUMBER RIGHT NOW
-        self.mobj["transition_table"].next_to(self.mobj["dfa"], RIGHT)
-
-        self.current_state = self.auto.initial_state
-        self.input_string = input_string
-
-        # A little aliasing
         self.dfa = self.auto
+
+        return self
+
+    def mobjects(self) -> list:
+        """
+        A getter method which provides the different mobjects the user may interact with
+        """
+        return self.mobj.keys()
+
+    def add_automaton(self, auto: DFA):
+        self.auto = auto
+        self.current_state = self.auto.initial_state
+        return self
+
+    def add_input_string(self, input_string: str):
+        self.input_string = input_string
+        return self
+
+    def show_process_text(self):
+        if self.input_string == "":
+            raise Exception("No input string to construct text around")
+
+        self.mobj["text"] = ProcessText(
+            self.input_string,
+            visual_config=self.config["text"],
+            highlight_color=self.config["theory"]["current_state_color"],
+        )
+
+        return self
+
+    def show_graph_render(self):
+        if self.dfa is None:
+            raise Exception("No automaton available to construct a view of")
+
+        edges_with_options = self._json_to_mobj_edges(self.dfa.transitions)
+
+        mobj_options = {
+            "vertices": {
+                v: {
+                    "label": v,
+                    "flags": []
+                } for v in self.dfa.states
+            },
+            "edges": edges_with_options
+        }
+
+        mobj_options["vertices"][self.dfa.initial_state]["flags"].extend(["i", "c"])
+
+        for state in self.dfa.final_states:
+            mobj_options["vertices"][state]["flags"].append("f")
+
+        self.mobj["dfa"] = FiniteAutomaton(
+            vertices=self.dfa.states,
+            edges=self._json_to_mobj_edges(self.dfa.transitions),
+            visual_config=self.config["graph"],
+            options=mobj_options
+        )
+
+        return self
+
+    def show_transition_table(self):
+        return self
+
+    def move_mobject(self, key, position):
+        self.mobj[key].move_to(position)
+
+    def shift_mobject(self, key, vector):
+        self.mobj[key].shift(vector)
 
     @classmethod
     def _json_to_mobj_edges(cls, transitions: dict) -> dict:
@@ -149,10 +201,10 @@ class DFA_Manager:
             next_state = self.dfa._get_next_current_state(self.current_state, self.mobj["text"].peek_next_letter())
             sequence.append(
                 AnimationGroup(
-                    self.mobj["transition_table"].MoveToNextTransition(),
+                    # self.mobj["transition_table"].MoveToNextTransition(),
                     self.mobj["text"].RemoveOneCharacter(),
                     self.mobj["dfa"].transition_animation(self.current_state, next_state),
-                    self.mobj["transition_table"].MoveToNextTransition()
+                    # self.mobj["transition_table"].MoveToNextTransition()
                 )
             )
             self.mobj["dfa"].remove_flag(self.current_state, "c")

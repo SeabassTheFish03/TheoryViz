@@ -3,15 +3,11 @@ __all__ = [
     "TuringTape"
 ]
 
-from manim.animation.animation import Animation
 from manim.animation.composition import AnimationGroup
 from manim.animation.creation import Unwrite
-from manim.animation.transform import FadeToColor, Transform, ReplacementTransform
-from manim.mobject.geometry.polygram import Rectangle
+from manim.animation.transform import FadeToColor, Transform
 from manim.mobject.table import Table
-from manim.mobject.text.tex_mobject import MathTex
 from manim.mobject.text.text_mobject import Text
-from manim.mobject.types.vectorized_mobject import VGroup, VDict
 from manim.utils.color.core import ManimColor
 
 
@@ -24,21 +20,22 @@ class ProcessText(Text):
     def __init__(
         self,
         text: str,
-        text_color: ManimColor = "white",
+        visual_config: dict,
         highlight_color: ManimColor = "yellow",
-        shadow_color: ManimColor = "dark_grey",
         **kwargs
     ) -> None:
-        super().__init__(text, color=text_color, **kwargs)
+        super().__init__(text, color=visual_config["color"], **kwargs)
 
         if ' ' in text:
             print("Warning: Whitespace does not translate well to this Mobject. Consider replacing with a different character, like _ (underscore)")
 
         self.textptr = 0
-        self[0].set_color(highlight_color)
+        self.config = visual_config
+        self.highlight = highlight_color
+        self[0].set_color(self.highlight)
 
         # The shadow that's left behind after the unwrites
-        self.add(Text(text, color=shadow_color).set_z_index(-1))
+        self.add(Text(text, color=visual_config["shadow_color"]).set_z_index(-1))
 
     def peek_next_letter(self) -> str:
         return self.original_text[self.textptr]
@@ -61,7 +58,7 @@ class ProcessText(Text):
         """
         if self.textptr < len(self.original_text) - 1:
             return AnimationGroup(
-                FadeToColor(self[self.textptr + 1], color="yellow"),
+                FadeToColor(self[self.textptr + 1], color=self.highlight),
                 Unwrite(self[self.textptr])
             )
         else:

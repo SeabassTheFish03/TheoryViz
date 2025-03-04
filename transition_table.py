@@ -3,7 +3,7 @@ from manim.mobject.text.tex_mobject import MathTex
 
 
 class TransitionTable(Table):
-    def __init__(self, automaton, visual_config, highlight_color="yellow", start_index=(1, 1)):
+    def __init__(self, automaton, visual_config, highlight_color="yellow", starting_symbol=""):
         """
         Given an automaton of type DFA or TM, constructs a mobject displaying the transition table of that automaton. Also provides helpful methods for animation.
         """
@@ -36,6 +36,11 @@ class TransitionTable(Table):
                 "color": self.config["border_color"]
             }
         )
+
+        if starting_symbol == "":
+            start_index = (1, 1)
+        else:
+            start_index = self.get_index(automaton.initial_state, starting_symbol)
 
         for state in automaton.final_states:
             for i, cell in enumerate([row[0] for row in rows]):

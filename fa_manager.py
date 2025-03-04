@@ -10,7 +10,7 @@ from automata.tm.tape import TMTape
 
 from manim.mobject.types.vectorized_mobject import VDict, VGroup
 from manim.animation.composition import Succession, AnimationGroup
-from manim.constants import UP, RIGHT
+from manim.constants import RIGHT
 
 from jsonschema import validate
 
@@ -64,9 +64,11 @@ class DFA_Manager:
         self.symbols.sort()
 
         self.current_state = self.auto.initial_state
-        self.input_string = input_string
         self.char_ptr = 0
         return self
+
+    def add_input_string(self, input_string: str):
+        self.input_string = input_string
 
     def show_process_text(self):
         if self.input_string == "":
@@ -141,72 +143,6 @@ class DFA_Manager:
     def scale_mobject(self, key, scale):
         self.mobj[key].scale(scale)
         return self
-
-    def mobjects(self) -> list:
-        """
-        A getter method which provides the different mobjects the user may interact with
-        """
-        return self.mobj.keys()
-
-    def add_automaton(self, auto: DFA):
-        self.auto = auto
-        self.current_state = self.auto.initial_state
-        return self
-
-    def add_input_string(self, input_string: str):
-        self.input_string = input_string
-        return self
-
-    def show_process_text(self):
-        if self.input_string == "":
-            raise Exception("No input string to construct text around")
-
-        self.mobj["text"] = ProcessText(
-            self.input_string,
-            visual_config=self.config["text"],
-            highlight_color=self.config["theory"]["current_state_color"],
-        )
-
-        return self
-
-    def show_graph_render(self):
-        if self.dfa is None:
-            raise Exception("No automaton available to construct a view of")
-
-        edges_with_options = self._json_to_mobj_edges(self.dfa.transitions)
-
-        mobj_options = {
-            "vertices": {
-                v: {
-                    "label": v,
-                    "flags": []
-                } for v in self.dfa.states
-            },
-            "edges": edges_with_options
-        }
-
-        mobj_options["vertices"][self.dfa.initial_state]["flags"].extend(["i", "c"])
-
-        for state in self.dfa.final_states:
-            mobj_options["vertices"][state]["flags"].append("f")
-
-        self.mobj["dfa"] = FiniteAutomaton(
-            vertices=self.dfa.states,
-            edges=self._json_to_mobj_edges(self.dfa.transitions),
-            visual_config=self.config["graph"],
-            options=mobj_options
-        )
-
-        return self
-
-    def show_transition_table(self):
-        return self
-
-    def move_mobject(self, key, position):
-        self.mobj[key].move_to(position)
-
-    def shift_mobject(self, key, vector):
-        self.mobj[key].shift(vector)
 
     @classmethod
     def _json_to_mobj_edges(cls, transitions: dict) -> dict:

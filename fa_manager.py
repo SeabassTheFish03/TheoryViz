@@ -224,7 +224,7 @@ class DFA_Manager:
                 if len(self.input_string) - i > 1:
                     next_next_char = self.input_string[i + 1]
                 else:
-                    next_next_char = next_char
+                    next_next_char = "outOfRange"
 
                 animation_queue = []
                 if self.showing["text"]:

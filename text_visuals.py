@@ -10,6 +10,8 @@ from manim.mobject.table import Table
 from manim.mobject.text.text_mobject import Text
 from manim.utils.color.core import ManimColor
 
+from automata.tm.tape import TMTape
+
 
 class ProcessText(Text):
     """
@@ -68,32 +70,34 @@ class ProcessText(Text):
 class TuringTape(Table):
     def __init__(
         self,
-        text: str,
-        blank_char: str = "_",
-        config: dict = dict()
+        tape: TMTape,
+        config: dict = dict(),
+        highlight_color="yellow"
     ):
-        self.text = text
-        self.blank = blank_char  # Character representing a blank space, not shown
-        self.index = 0
+        self.text = "".join(list(tape.tape))
+        self.blank = tape.blank_symbol
+        self.index = tape.current_position
 
         super().__init__(
-            [(list(text) + [self.blank])],
+            [(list(self.text) + [self.blank])],
             element_to_mobject=Text,
             element_to_mobject_config={
-                "color": config["text"]["color"],
-                "font_size": config["text"]["font_size"],
+                "color": config["color"]
             },
             line_config={
-                "color": config["table"]["border_color"]
+                "color": config["color"]
             },
             include_outer_lines=True
         )
 
+        for element in self.get_entries():
+            element.scale(config["font_size"] / 48)
+
         self.indicator = self.get_cell(
             (1, (self.index + 1) % len(self.text)),
-            color=config["theory"]["current_state_color"]
+            color=highlight_color
         )
-        self.visual_config = config
+        self.config = config
         self.add(self.indicator)
 
     def animate_update(self, changes):
@@ -108,7 +112,7 @@ class TuringTape(Table):
 
         new_entry = Text(write).move_to(
             self.get_entries((1, self.index + 1))
-        ).scale(self.visual_config["text"]["font_size"] / 48)  # 48 is the default font size. font_size argument doesn't work, so this is the best we can do.
+        ).scale(self.config["font_size"] / 48).set_color(self.config["color"])
 
         if write == self.blank:
             write = " "
@@ -121,17 +125,3 @@ class TuringTape(Table):
                 new_entry
             )
         )
-
-    def animate_left(self, write):
-        return self.animate_change_highlighted(write, max(self.index - 1, 0))
-
-    def animate_right(self, write):
-        return self.animate_change_highlighted(write, min(self.index + 1, len(self.text) - 1))
-
-    def animate_move(self, write, direction):
-        if direction == "L":
-            return self.animate_left(write)
-        elif direction == "R":
-            return self.animate_right(write)
-        else:
-            raise ValueError(f"Direction {direction} not recognized")

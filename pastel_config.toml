@@ -1,0 +1,48 @@
+[scene]
+background_color = "#f8f6f0"
+
+[graph]
+layout_scale = 2
+layout = "circular"
+
+[graph.vertex]
+radius = 0.3
+color = "#6b6b6b"
+stroke_color = "#6b6b6b"
+
+[graph.vertex.label]
+color = "#f8f6f0"
+font_size = 30
+
+[graph.edge]
+color = "#6b6b6b"
+
+[graph.edge.label]
+label_position = 0.4  # Some float between 0 and 1, how far along the line is the label?
+font_size = 30
+
+[graph.edge.label.label]
+color = "#6b6b6b"
+fill_color = "#dcd7ba"
+
+[graph.edge.label.frame]
+color = "#6b6b6b"
+
+[graph.edge.label.box]
+color = "#f8f6f0"
+
+[theory]
+show_initial_state_arrow = true
+show_final_state_annulus = true
+initial_state_color = "#82aaff"
+final_state_color = "#f28b82"
+current_state_color = "#ffcb6b"
+transition_color = "#81c995"
+
+[text]
+color = "#6b6b6b"
+shadow_color = "#dcd7ba"
+font_size = 30
+
+[table]
+border_color = "#6b6b6b"

@@ -44,12 +44,19 @@ class LabeledCurvedArrow(CurvedArrow):
 
         self.label = Label(
             label=label,
+<<<<<<< Updated upstream
             label_config=config.get("label", dict()),
             box_config=config.get("box", None),
             frame_config=config.get("frame", None)
         ).move_to(self.label_point).scale(config["font_size"] / 48)
+=======
+            label_config=config["label"].get("label", dict()),
+            box_config=config["label"].get("box", None),
+            frame_config=config["label"].get("frame", None)
+        ).scale(config["label"]["font_size"] / 48)
+>>>>>>> Stashed changes
 
-        super().__init__(start_point, end_point, angle=tau * 2 / 3, **kwargs)
+        super().__init__(start_point, end_point, angle=tau * 2 / 3, color=config["color"], **kwargs)
 
         self.around = around
 
@@ -260,6 +267,7 @@ class FiniteAutomaton(DiGraph):
                     label=edge_label,
                     start=self[u],
                     end=self[v],
+                    color=this_edge_config["color"],
                     label_position=this_edge_config["label"]["label_position"],
                     label_config=this_edge_config["label"]["label"],
                     box_config=this_edge_config["label"]["box"],
@@ -274,7 +282,14 @@ class FiniteAutomaton(DiGraph):
                 this_edge_config = deepcopy(general_edge_config)
                 this_edge_config.update(specific_edge_config.get((u, u), dict()))
 
+<<<<<<< Updated upstream
                 self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config["label"]).rotate(-1 * angle_between(self[u].get_center(), self.vcenter()), axis=[0, 0, 1])
+=======
+                self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config).rotate(angle_between(self[u].get_center(), [0, -1, 0]), axis=[0, 0, 1])
+
+                if self.vcenter()[0] - self[u].get_center()[0] > 0.5:
+                    self.edges[(u, u)].rotate(-1 * pi, axis=[0, 0, 1])
+>>>>>>> Stashed changes
 
         for (u, v), edge in self.edges.items():
             try:
@@ -388,6 +403,6 @@ class FiniteAutomaton(DiGraph):
             wiggle_vector = np.array([1, 0, 0])
 
         return Succession(
-            ApplyReverseWave(self.edges[(start, end)], direction=wiggle_vector),
-            Indicate(self.vertices[end]["base"])
+            ApplyReverseWave(self.edges[(start, end)], direction=wiggle_vector, color=self.visual_config["theory"]["transition_color"]),
+            Indicate(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"])
         )

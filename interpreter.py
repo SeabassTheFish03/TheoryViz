@@ -7,6 +7,7 @@ from pathlib import Path
 
 from manim.scene.scene import Scene
 from manim._config import tempconfig
+from manim.animation.creation import Create
 
 # NOTE: This shouldn't run ridiculously slow, but a potential speedup
 #   I see is running each LOAD instruction concurrently.
@@ -21,6 +22,7 @@ class OutputScene(Scene):
 
     def construct(self):
         if len(self.animations) > 0:
+            self.play(Create(*[manager.mobj for manager in self.managers.values()]))
             for anim in self.animations:
                 self.play(anim)
         else:
@@ -79,7 +81,10 @@ def load_from_file(pathobj, varname, scene):
 def triageLine(line, scene):
     tokens = line.strip().split(" ")
 
-    if line.startswith("LOAD "):
+    if line.startswith("# "):
+        # It's a comment
+        pass
+    elif line.startswith("LOAD "):
         # LOAD <filename> AS <varname>
         if tokens[-2] != "AS":
             raise SyntaxError("Malformed 'AS' command")
@@ -107,31 +112,57 @@ def triageLine(line, scene):
         scene.showing = True
 
     elif line.startswith("MOVE "):
-        if tokens[2] != "TO":
+        # MOVE <component> OF <varname> TO <coords>
+        if tokens[2] != "OF":
+            raise SyntaxError("Malformed Command: Missing or mistyped OF keyword")
+        if tokens[4] != "TO":
             raise SyntaxError("Malformed Command: Missing or mistyped TO keyword")
 
         # Now parsing the coords
-        coords = "".join(tokens[3:]).split(",")
+        coords = "".join(tokens[5:]).split(",")
 
-        if len(coords) != 2:
-            raise SyntaxError(f"Malformed coordinates passed: got {len(coords)} values, expected 2")
+        if len(coords) not in [2, 3]:
+            raise SyntaxError(f"Malformed coordinates passed: got {len(coords)} values, expected 2 or 3")
 
         coords = [float(c) for c in coords]
 
-        scene.mobjects[tokens[1]]["mobj"].move_to([*coords, 0])
+        manager: Auto_Manager = scene.managers[tokens[3]]
+        manager.move_mobj(tokens[1], coords)
+
     elif line.startswith("SHIFT "):
-        if tokens[2] != "BY":
+        # SHIFT <component> OF <varname> BY <coords>
+        if tokens[2] != "OF":
+            raise SyntaxError("Malformed Command: Missing or mistyped OF keyword")
+        if tokens[4] != "BY":
             raise SyntaxError("Malformed Command: Missing or mistyped BY keyword")
 
-        coords = "".join(tokens[3:]).split(",")
+        coords = "".join(tokens[5:]).split(",")
         coords = [float(c) for c in coords]
-        if len(coords) != 2:
-            raise SyntaxError(f"Malformed coordinates passed: got {len(coords)} values, expected 2")
+        if len(coords) not in [2, 3]:
+            raise SyntaxError(f"Malformed coordinates passed: got {len(coords)} values, expected 2 or 3")
 
-        scene.mobjects[tokens[1]]["mobj"].shift([*coords, 0])
+        manager: Auto_Manager = scene.managers[tokens[3]]
+        manager.shift_mobj(tokens[1], coords)
+    elif line.startswith("INPUT "):
+        # INPUT <string> TO <varname>
+        if tokens[2] != "TO":
+            raise SyntaxError("Malformed Command: Missing or mistyped TO keyword")
+
+        manager: Auto_Manager = scene.managers[tokens[3]]
+        manager.add_input(tokens[1])
+
     elif line.startswith("PRINT "):
+        # PRINT <words>
         words = capture_quotes(tokens[1:])
         print(words)
+
+    elif line.startswith("ANIMATE"):
+        # ANIMATE[!]
+        if line.strip() not in ["ANIMATE", "ANIMATE!"]:
+            raise SyntaxError("Superfluous characters after ANIMATE command")
+
+        for manager in scene.managers.values():
+            scene.animations.append(manager.animate())
 
 
 def interpret(filename: str) -> None:

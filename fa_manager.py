@@ -213,7 +213,7 @@ class DFA_Manager(Auto_Manager):
         out.add_automaton(auto)
 
         if len(input_string) > 0:
-            out.add_input_string(input_string)
+            out.add_input(input_string)
 
         return out
 

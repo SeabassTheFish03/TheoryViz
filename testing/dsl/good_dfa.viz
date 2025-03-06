@@ -1,3 +1,8 @@
 LOAD "../fa_vault/sample_dfa.json" AS good_dfa
+INPUT abac TO good_dfa
 SHOW dfa OF good_dfa
+SHOW table OF good_dfa
+MOVE dfa OF good_dfa TO -3,0,0
+SHIFT table OF good_dfa BY 3,0,0
 PRINT "Good copy"
+ANIMATE!

@@ -48,14 +48,14 @@ class TransitionTable(Table):
                     final_state_box = self.get_cell((i + 2, 1)).copy().scale(0.9).set_color("white")
                     self.add(final_state_box)
 
-
         self.follower = self.get_cell(start_index).copy().set_color(highlight_color)
         self.add(self.follower)
 
     def get_index(self, state, symbol):
-        if (symbol == "outOfRange"):
+        if (symbol == "?"):
             return (self.states.index(state) + 2, 1)
-        else: return (self.states.index(state) + 2, self.symbols.index(symbol) + 2)
+        else:
+            return (self.states.index(state) + 2, self.symbols.index(symbol) + 2)
 
     def move_follower(self, next_row, next_col):
         self.follower.move_to(self.get_cell(self.get_index(next_row, next_col)))

@@ -1,4 +1,4 @@
-from fa_manager import DFA_Manager, NFA_Manager, TM_Manager
+from fa_manager import Auto_Manager, DFA_Manager, NFA_Manager, TM_Manager
 import json
 import sys
 import os
@@ -6,28 +6,25 @@ import os
 from pathlib import Path
 
 from manim.scene.scene import Scene
+from manim._config import tempconfig
 
 # NOTE: This shouldn't run ridiculously slow, but a potential speedup
 #   I see is running each LOAD instruction concurrently.
 
 
 class OutputScene(Scene):
-    def __init__(self, animated=False, commands=list()):
+    def __init__(self, showing=False, commands=list()):
         super().__init__()
         self.animations = list()
-        self.animated = animated
+        self.showing = showing
         self.managers = dict()  # Format {"name": {"manager": FA_Manager, "show": bool}}
 
     def construct(self):
-        if self.animated:
-            if len(self.animations) > 0:
-                for anim in self.animations:
-                    self.play(anim)
-            else:
-                print("This scene claims it is an animation, yet no animations were provided")
-                exit(1)
+        if len(self.animations) > 0:
+            for anim in self.animations:
+                self.play(anim)
         else:
-            self.add(*[manager_block["manager"].mobj for manager_block in self.managers.values() if manager_block["show"]])
+            self.add(*[manager.mobj for manager in self.managers.values()])
 
 
 def capture_quotes(tokens: list[str], delimiter: str = " ") -> str:
@@ -80,7 +77,7 @@ def load_from_file(pathobj, varname, scene):
 
 
 def triageLine(line, scene):
-    tokens = line.split(" ")
+    tokens = line.strip().split(" ")
 
     if line.startswith("LOAD "):
         # LOAD <filename> AS <varname>
@@ -95,15 +92,20 @@ def triageLine(line, scene):
         varname = tokens[-1]
 
         load_from_file(pathobj, varname, scene)
-    elif line.startsWith("SHOW "):
-        # SHOW <varname>
+    elif line.startswith("SHOW "):
+        # SHOW <component> OF <varname>
+        if len(tokens) != 4:
+            raise SyntaxError(f"Malformed command: too many tokens ({len(tokens)}), expected 4")
+        if tokens[2] != "OF":
+            raise SyntaxError("Malformed command: missing or mistyped OF keyword")
+        if tokens[3] not in scene.managers:
+            raise KeyError(f"Object {tokens[3]} not recognized.")
 
-        # Since variable names can't have spaces, have to make sure
-        #  no spaces made it into the query
-        if len(tokens) != 2:
-            raise SyntaxError(f"Too many arguments: {len(tokens)}, expected 2")
+        manager: Auto_Manager = scene.managers[tokens[3]]
 
-        scene.mobjects[tokens[1]]["show"] = True
+        manager.show_mobj(tokens[1])
+        scene.showing = True
+
     elif line.startswith("MOVE "):
         if tokens[2] != "TO":
             raise SyntaxError("Malformed Command: Missing or mistyped TO keyword")
@@ -140,6 +142,9 @@ def interpret(filename: str) -> None:
         read_file(infile, scene)
     except SyntaxError as e:
         raise SyntaxError(f"Viz file {str(infile)}:\n\t{str(e)}")
+
+    with tempconfig({"quality": "low_quality", "preview": True}):
+        scene.render()
 
 
 if __name__ == "__main__":

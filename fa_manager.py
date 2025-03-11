@@ -12,7 +12,7 @@ from automata.tm.tape import TMTape
 
 from manim.mobject.types.vectorized_mobject import VDict, VGroup
 from manim.animation.composition import Succession, AnimationGroup
-from manim.constants import RIGHT
+from manim.constants import UP, RIGHT
 
 from jsonschema import validate
 
@@ -42,51 +42,23 @@ class Auto_Manager:
     def mobjects(self) -> list[str]:
         return self.mobj.submob_dict.keys()
 
-    def add_automaton(self, auto: Automaton):
-        self.auto = auto
-
-        self.states = list(auto.states)
-        self.symbols = list(auto.input_symbols)
-
-        self.states.sort()
-        self.symbols.sort()
-
-        self.current_state = self.auto.initial_state
-        self.char_ptr = 0
-        return self
-
-    def add_input(self, input_str: str) -> None:
-        self.input_string = input_str
-
-    def show_mobj(self, key: str) -> None:
+    def show_mobj(self, key: str):
         self.how_to_show[key]()
-
-    def move_mobj(self, key: str, position: list[int | float] | NDArray):
-        self.mobj[key].move_to(position)
         return self
 
-    def shift_mobj(self, key, vector):
+    def move_mobj(self, key: str, location: NDArray):
+        self.mobj[key].move_to(location)
+        return self
+
+    def shift_mobj(self, key: str, vector: NDArray):
         self.mobj[key].shift(vector)
         return self
 
-    def next_to_mobj(
-        self,
-        mover_key: str,
-        anchor_key: str,
-        direction: NDArray = RIGHT
-    ):
-        self.mobj[mover_key].next_to(self.mobj[anchor_key], direction)
-        return self
-
-    def scale_mobj(self, key, scale):
-        self.mobj[key].scale(scale)
-        return self
-
-    def animate(self) -> Succession:
-        return Succession()
+    def next_to_mobj(self, moved_key: str, anchor_key: str, direction: NDArray):
+        self.mobj[anchor_key].next_to(self.mobj[anchor_key], direction)
 
 
-class DFA_Manager(Auto_Manager):
+class DFA_Manager:
     def __init__(
         self,
         config: dict
@@ -116,6 +88,19 @@ class DFA_Manager(Auto_Manager):
 
         self.current_state: DFAStateT = None
         self.char_ptr: int = None
+
+    def _show_transition_table(self):
+        mobj = TransitionTable(
+            self.auto,
+            self.config["table"],
+            highlight_color=self.config["theory"]["current_state_color"],
+            starting_symbol=self.input_string[0]
+        )
+
+        self.mobj["table"] = mobj
+        self.showing["table"] = True
+
+        return self
 
     def _show_process_text(self):
         if self.input_string == "":
@@ -162,19 +147,6 @@ class DFA_Manager(Auto_Manager):
 
         return self
 
-    def _show_transition_table(self):
-        mobj = TransitionTable(
-            self.auto,
-            self.config["table"],
-            highlight_color=self.config["theory"]["current_state_color"],
-            starting_symbol=self.input_string[0]
-        )
-
-        self.mobj["table"] = mobj
-        self.showing["table"] = True
-
-        return self
-
     @classmethod
     def _json_to_mobj_edges(cls, transitions: dict) -> dict:
         edges = dict()
@@ -216,6 +188,28 @@ class DFA_Manager(Auto_Manager):
             out.add_input(input_string)
 
         return out
+
+    def mobjects(self) -> list:
+        """
+        A getter method which provides the different mobjects the user may interact with
+        """
+        return self.mobj.keys()
+
+    def add_automaton(self, auto: DFA):
+        self.auto = auto
+
+        self.states = list(auto.states)
+        self.symbols = list(auto.input_symbols)
+
+        self.states.sort()
+        self.symbols.sort()
+
+        self.current_state = self.auto.initial_state
+        self.char_ptr = 0
+        return self
+
+    def add_input(self, input_str: str) -> None:
+        self.input_string = input_str
 
     @classmethod
     def validate_json(cls, json_object: dict) -> None:
@@ -321,6 +315,21 @@ class TM_Manager(Auto_Manager):
 
         self.config = config
         self.tm_config = None
+
+    def add_automaton(self, auto: DTM):
+        self.auto = auto
+
+        self.states = list(auto.states)
+        self.input_symbols = list(auto.input_symbols)
+        self.tape_symbols = list(auto.tape_symbols)
+
+        self.states.sort()
+        self.input_symbols.sort()
+        self.tape_symbols.sort()
+
+        self.blank_symbol = auto.blank_symbol
+
+        return self
 
     # Overrides method from Auto_Manager
     def add_input(self, input_string: str):

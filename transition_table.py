@@ -17,6 +17,8 @@ class TransitionTable(Table):
 
         rows = []
 
+        self.starting_symbol = starting_symbol
+
         for state in self.states:
             new_row = []
             for sym in self.symbols:

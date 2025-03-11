@@ -39,13 +39,13 @@ class TransitionTable(Table):
             }
         )
 
-        if len(self.starting_symbol) == 0:
-            start_index = (self.states.index(automaton.initial_state) + 2, 2)
+        if starting_symbol == "":
+            start_index = (1, 1)
         else:
-            start_index = (self.states.index(automaton.initial_state) + 2, self.symbols.index(self.starting_symbol) + 2)
+            start_index = self.get_index(automaton.initial_state, starting_symbol)
 
         for state in automaton.final_states:
-            for i, cell in enumerate([row[0] for row in rows]):
+            for i, cell in enumerate(self.states):
                 if cell == state:
                     final_state_box = self.get_cell((i + 2, 1)).copy().scale(0.9).set_color("white")
                     self.add(final_state_box)
@@ -54,7 +54,10 @@ class TransitionTable(Table):
         self.add(self.follower)
 
     def get_index(self, state, symbol):
-        return (self.states.index(state) + 2, self.symbols.index(symbol) + 2)
+        if (symbol == "?"):
+            return (self.states.index(state) + 2, 1)
+        else:
+            return (self.states.index(state) + 2, self.symbols.index(symbol) + 2)
 
     def move_follower(self, next_row, next_col):
         self.follower.move_to(self.get_cell(self.get_index(next_row, next_col)))

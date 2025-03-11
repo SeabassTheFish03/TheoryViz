@@ -1,0 +1,52 @@
+{
+	"define": [
+		{
+			"filename": "fa_vault/sample_dfa.json",
+			"env_name": "thing",
+			"starting_pos": {
+				"x": 0,
+				"y": 0
+			}
+		}
+	],
+	"commands": [
+		{
+			"verb": "input",
+			"object": "thing",
+			"predicate": "abac"
+		},
+		{
+			"verb": "show",
+			"object": "thing",
+			"predicate": "dfa"
+		},
+		{
+			"verb": "show",
+			"object": "thing",
+			"predicate": "table"
+		},
+		{
+			"verb": "move",
+			"object": "thing",
+			"predicate": {
+				"component": "dfa",
+				"x": 3,
+				"y": 0,
+				"z": 0
+			}
+		},
+		{
+			"verb": "shift",
+			"object": "thing",
+			"predicate": {
+				"x": -3,
+				"y": 0,
+				"z": 0
+			}
+		},
+		{
+			"verb": "print",
+			"object": "Good copy!"
+		},
+	]
+}

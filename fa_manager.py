@@ -1,107 +1,108 @@
 # Standard Library
 import json
+import tomllib
+from typing import Callable
 
 # Dependencies
-from automata.fa.dfa import DFA
+from automata.base.automaton import Automaton, AutomatonStateT
+from automata.fa.dfa import DFA, DFAStateT
 from automata.tm.dtm import DTM
 from automata.tm.configuration import TMConfiguration
 from automata.tm.tape import TMTape
 
-from manim.mobject.types.vectorized_mobject import VDict
+from manim.mobject.types.vectorized_mobject import VDict, VGroup
 from manim.animation.composition import Succession, AnimationGroup
-<<<<<<< Updated upstream
-from manim.constants import UP
-from manim.constants import RIGHT
-=======
 from manim.constants import UP, RIGHT
->>>>>>> Stashed changes
 
 from jsonschema import validate
+
+from numpy.typing import NDArray
 
 # Internal
 from finite_automaton import FiniteAutomaton
 from text_visuals import ProcessText, TuringTape
-<<<<<<< Updated upstream
-# from transition_table_mobject import DisplayTransitionTable
-from transition_table_mobject import AnimateTransitionTable
-=======
 from transition_table import TransitionTable
->>>>>>> Stashed changes
+
+
+class Auto_Manager:
+    def __init__(self):
+        self.auto: Automaton = None
+        self.mobj: VDict = VDict()
+        self.input_string: str = None
+
+        self.states: list[AutomatonStateT] = []
+        self.symbols: list[str]
+
+        self.current_state: AutomatonStateT = None
+        self.char_ptr: int = None
+
+        # Maps the keys for self.mobj to the internal functions which create each component
+        self.how_to_show: dict[str, Callable] = {}
+
+    def mobjects(self) -> list[str]:
+        return self.mobj.submob_dict.keys()
+
+    def show_mobj(self, key: str):
+        self.how_to_show[key]()
+        return self
+
+    def move_mobj(self, key: str, location: NDArray):
+        self.mobj[key].move_to(location)
+        return self
+
+    def shift_mobj(self, key: str, vector: NDArray):
+        self.mobj[key].shift(vector)
+        return self
+
+    def next_to_mobj(self, moved_key: str, anchor_key: str, direction: NDArray):
+        self.mobj[anchor_key].next_to(self.mobj[anchor_key], direction)
 
 
 class DFA_Manager:
     def __init__(
         self,
-        auto: DFA,
-        mobj: FiniteAutomaton,
-        config: dict = dict(),
-        input_string: str = "",
-        json_object: dict = dict(),
+        config: dict
     ) -> None:
-        self.auto: DFA = auto
+        self.auto: DFA = None
         self.mobj: VDict = VDict({
-<<<<<<< Updated upstream
-            "dfa": mobj,
-            "text": ProcessText(
-                input_string,
-                text_color=config["text"]["color"],
-                highlight_color=config["theory"]["current_state_color"],
-                shadow_color=config["text"]["shadow_color"]
-            ),
-            "transition_table": AnimateTransitionTable(json_object, input_string) #if next to DFA, don't have initial arrow?
-        })
-
-        self.mobj["dfa"].move_to([-4, 0, 0]) #MAGIC NUMBER
-        self.mobj["text"].next_to(self.mobj["dfa"], UP)
-        self.mobj["transition_table"].scale(.7)#config["table"]["scale"]) #MAGIC NUMBER RIGHT NOW
-        self.mobj["transition_table"].next_to(self.mobj["dfa"], RIGHT)
-=======
             "dfa": VGroup(),
             "text": VGroup(),
             "table": VGroup()
         })
+        self.input_string: str = ""
+        self.config: dict = config
 
+        self.how_to_show: dict[str, Callable] = {
+            "dfa": self._show_graph_render,
+            "text": self._show_process_text,
+            "table": self._show_transition_table
+        }
         self.showing: dict[str, bool] = {
             "dfa": False,
             "text": False,
             "table": False
         }
 
-        self.states = []
-        self.symbols = []
+        self.states: list[str] = []
+        self.symbols: list[str] = []
 
-        self.input_string = ""
-        self.current_state = None
-        self.char_ptr = None
-        self.config = config
+        self.current_state: DFAStateT = None
+        self.char_ptr: int = None
 
-    def mobjects(self) -> list:
-        """
-        A getter method which provides the different mobjects the user may interact with
-        """
-        return self.mobj.keys()
+    def _show_transition_table(self):
+        mobj = TransitionTable(
+            self.auto,
+            self.config["table"],
+            highlight_color=self.config["theory"]["current_state_color"],
+            starting_symbol=self.input_string[0]
+        )
 
-    def add_automaton(self, auto: DFA):
-        self.auto = auto
+        self.mobj["table"] = mobj
+        self.showing["table"] = True
 
-        self.states = list(auto.states)
-        self.symbols = list(auto.input_symbols)
-
-        self.states.sort()
-        self.symbols.sort()
->>>>>>> Stashed changes
-
-        self.current_state = self.auto.initial_state
-        self.input_string = input_string
-<<<<<<< Updated upstream
-
-        # A little aliasing
-        self.dfa = self.auto
-=======
-        self.char_ptr = 0
         return self
 
-    def show_process_text(self):
+    def _show_process_text(self):
         if self.input_string == "":
             raise Exception("No input string to construct text around")
 
@@ -114,11 +115,11 @@ class DFA_Manager:
         self.showing["text"] = True
         return self
 
-    def show_graph_render(self):
+    def _show_graph_render(self):
         if self.auto is None:
             raise Exception("No automaton available to construct a view of")
 
-        edges_with_options = self._json_to_mobj_edges(self.auto.transitions)
+        edges_with_options: dict = self._json_to_mobj_edges(self.auto.transitions)
 
         mobj_options = {
             "vertices": {
@@ -146,36 +147,6 @@ class DFA_Manager:
 
         return self
 
-    def show_transition_table(self):
-        mobj = TransitionTable(
-            self.auto,
-            self.config["table"],
-            highlight_color=self.config["theory"]["current_state_color"],
-            starting_symbol=self.input_string[0]
-        )
-
-        self.mobj["table"] = mobj
-        self.showing["table"] = True
-
-        return self
-
-    def move_mobject(self, key, position):
-        self.mobj[key].move_to(position)
-        return self
-
-    def shift_mobject(self, key, vector):
-        self.mobj[key].shift(vector)
-        return self
-
-    def next_to_mobject(self, mover_key, anchor_key, direction=RIGHT):
-        self.mobj[mover_key].next_to(self.mobj[anchor_key], direction)
-        return self
-
-    def scale_mobject(self, key, scale):
-        self.mobj[key].scale(scale)
-        return self
->>>>>>> Stashed changes
-
     @classmethod
     def _json_to_mobj_edges(cls, transitions: dict) -> dict:
         edges = dict()
@@ -194,18 +165,13 @@ class DFA_Manager:
     def from_json(cls, json_object: dict, config: dict = dict(), input_string: str = ""):
         # Throws on failure
         cls.validate_json(json_object)
-
         allow_partial = json_object.get("allow_partial", False)
 
-<<<<<<< Updated upstream
-=======
         # Config stuff
         with open("default_config.toml", "rb") as f:
             default_config = tomllib.load(f)
 
         config = {**default_config, **config}
-
->>>>>>> Stashed changes
         auto = DFA(
             states=set(json_object["states"]),
             input_symbols=json_object["input_symbols"],
@@ -219,9 +185,31 @@ class DFA_Manager:
         out.add_automaton(auto)
 
         if len(input_string) > 0:
-            out.add_input_string(input_string)
+            out.add_input(input_string)
 
         return out
+
+    def mobjects(self) -> list:
+        """
+        A getter method which provides the different mobjects the user may interact with
+        """
+        return self.mobj.keys()
+
+    def add_automaton(self, auto: DFA):
+        self.auto = auto
+
+        self.states = list(auto.states)
+        self.symbols = list(auto.input_symbols)
+
+        self.states.sort()
+        self.symbols.sort()
+
+        self.current_state = self.auto.initial_state
+        self.char_ptr = 0
+        return self
+
+    def add_input(self, input_str: str) -> None:
+        self.input_string = input_str
 
     @classmethod
     def validate_json(cls, json_object: dict) -> None:
@@ -252,32 +240,16 @@ class DFA_Manager:
 
     def animate(self) -> Succession:
         sequence = []
-<<<<<<< Updated upstream
-        for _ in self.input_string:
-            next_state = self.dfa._get_next_current_state(self.current_state, self.mobj["text"].peek_next_letter())
-            sequence.append(
-                AnimationGroup(
-                    self.mobj["transition_table"].MoveToNextTransition(),
-                    self.mobj["text"].RemoveOneCharacter(),
-                    self.mobj["dfa"].transition_animation(self.current_state, next_state),
-                    self.mobj["transition_table"].MoveToNextTransition()
-                )
-            )
-            self.mobj["dfa"].remove_flag(self.current_state, "c")
-            self.mobj["text"].increment_letter()
-            self.mobj["dfa"].add_flag(next_state, "c")
-=======
         if len(self.input_string) == 0:
             raise Exception("Can't animate without more than one character")
         else:
             for i, next_char in enumerate(self.input_string):
                 next_state = self.auto._get_next_current_state(self.current_state, next_char)
->>>>>>> Stashed changes
 
                 if len(self.input_string) - i > 1:
                     next_next_char = self.input_string[i + 1]
                 else:
-                    next_next_char = next_char
+                    next_next_char = "?"
 
                 animation_queue = []
                 if self.showing["text"]:
@@ -300,15 +272,15 @@ class DFA_Manager:
         return Succession(*sequence)
 
 
-class NFA_Manager:
+class NFA_Manager(Auto_Manager):
     pass
 
 
-class PDA_Manager:
+class PDA_Manager(Auto_Manager):
     pass
 
 
-class TM_Manager:
+class TM_Manager(Auto_Manager):
     def __init__(
         self,
         config: dict = dict(),
@@ -322,6 +294,11 @@ class TM_Manager:
             "table": VGroup()
         })
 
+        self.how_to_show: dict[str, Callable] = {
+            "tm": self._show_graph_render,
+            "tape": self._show_tape,
+            "table": self._show_transition_table
+        }
         self.showing: dict[str, bool] = {
             "tm": False,
             "tape": False,
@@ -354,7 +331,8 @@ class TM_Manager:
 
         return self
 
-    def add_input_string(self, input_string: str):
+    # Overrides method from Auto_Manager
+    def add_input(self, input_string: str):
         if self.auto is None:
             raise Exception("Can't add an input string without an automaton")
 
@@ -363,7 +341,7 @@ class TM_Manager:
 
         return self
 
-    def show_graph_render(self):
+    def _show_graph_render(self):
         edges_with_options = self._json_to_mobj_edges(self.auto.transitions)
 
         mobj_options = {
@@ -392,7 +370,7 @@ class TM_Manager:
 
         return self
 
-    def show_tape(self):
+    def _show_tape(self):
         if self.tape is None:
             raise Exception("Can't render a nonexistent tape")
 
@@ -401,7 +379,7 @@ class TM_Manager:
 
         return self
 
-    def show_transition_table(self):
+    def _show_transition_table(self):
         mobj = TransitionTable(
             self.auto,
             self.config["table"],
@@ -412,22 +390,6 @@ class TM_Manager:
         self.mobj["table"] = mobj
         self.showing["table"] = True
 
-        return self
-
-    def move_mobject(self, key, position):
-        self.mobj[key].move_to(position)
-        return self
-
-    def shift_mobject(self, key, vector):
-        self.mobj[key].shift(vector)
-        return self
-
-    def next_to_mobject(self, mover_key, anchor_key, direction=RIGHT):
-        self.mobj[mover_key].next_to(self.mobj[anchor_key], direction)
-        return self
-
-    def scale_mobject(self, key, scale):
-        self.mobj[key].scale(scale)
         return self
 
     @classmethod

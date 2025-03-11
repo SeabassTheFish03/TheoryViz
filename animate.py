@@ -22,13 +22,13 @@ class SceneToShow(Scene):
         # Triage
         if fa_json["fa_type"] == "dfa":
             self.fa = DFA_Manager.from_json(fa_json, config=self.config, input_string=input_string)
-            self.fa.show_graph_render()
-            self.fa.show_process_text()
-            self.fa.show_transition_table()
-            self.fa.move_mobject("table", [-2, 0, 0])
-            self.fa.next_to_mobject("dfa", "table", RIGHT)
-            self.fa.scale_mobject("dfa", 0.7)
-            self.fa.next_to_mobject("text", "dfa", UP)
+            self.fa.show_mobj("dfa")
+            self.fa.show_mobj("text")
+            self.fa.show_mobj("table")
+            self.fa.move_mobj("table", [-2, 0, 0])
+            self.fa.next_to_mobj("dfa", "table", RIGHT)
+            self.fa.scale_mobj("dfa", 0.7)
+            self.fa.next_to_mobj("text", "dfa", UP)
         elif fa_json["fa_type"] == "tm":
             self.fa = TM_Manager.from_json(fa_json, config=self.config, input_string=input_string)
             self.fa.show_graph_render()

@@ -11,14 +11,15 @@ from math import tau, pi
 import numpy as np
 
 # Manim
+from manim.animation.transform import FadeToColor
 from manim.animation.indication import Indicate
 from manim.animation.composition import Succession
+from manim.animation.movement import MoveAlongPath
 from manim.mobject.graph import DiGraph
 from manim.mobject.geometry.arc import CurvedArrow, Annulus, LabeledDot, Dot
 from manim.mobject.geometry.labeled import LabeledLine, Label
 from manim.mobject.geometry.line import Arrow
-from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
-from manim.mobject.text.tex_mobject import MathTex, Tex
+from manim.mobject.text.tex_mobject import MathTex
 from manim.mobject.types.vectorized_mobject import VGroup, VDict
 
 # Internal
@@ -32,7 +33,7 @@ def unit_vector(vector):
 def angle_between(v1, v2):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+    return np.arccos(np.dot(v1_u, v2_u))
 
 
 class LabeledCurvedArrow(CurvedArrow):
@@ -40,23 +41,16 @@ class LabeledCurvedArrow(CurvedArrow):
         start_point = np.array([around.get_left()[0] - buffer, around.get_center()[1], around.get_center()[2]])
         end_point = np.array([around.get_right()[0] + buffer, around.get_center()[1], around.get_center()[2]])
 
-        self.label_point = (start_point + end_point) / 2 - np.array([0, 2 * around.height, 0])
-
         self.label = Label(
             label=label,
-<<<<<<< Updated upstream
-            label_config=config.get("label", dict()),
-            box_config=config.get("box", None),
-            frame_config=config.get("frame", None)
-        ).move_to(self.label_point).scale(config["font_size"] / 48)
-=======
             label_config=config["label"].get("label", dict()),
             box_config=config["label"].get("box", None),
             frame_config=config["label"].get("frame", None)
         ).scale(config["label"]["font_size"] / 48)
->>>>>>> Stashed changes
 
         super().__init__(start_point, end_point, angle=tau * 2 / 3, color=config["color"], **kwargs)
+
+        MoveAlongPath(self.label, self).interpolate_mobject(0.5)
 
         self.around = around
 
@@ -68,6 +62,7 @@ class LabeledCurvedArrow(CurvedArrow):
 
         self.remove(self.label)
         super().rotate(angle, axis, about_point, **kwargs)
+        MoveAlongPath(self.label, self).interpolate_mobject(0.5)
         self.add(self.label)
         return self
 
@@ -282,14 +277,10 @@ class FiniteAutomaton(DiGraph):
                 this_edge_config = deepcopy(general_edge_config)
                 this_edge_config.update(specific_edge_config.get((u, u), dict()))
 
-<<<<<<< Updated upstream
-                self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config["label"]).rotate(-1 * angle_between(self[u].get_center(), self.vcenter()), axis=[0, 0, 1])
-=======
                 self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config).rotate(angle_between(self[u].get_center(), [0, -1, 0]), axis=[0, 0, 1])
 
                 if self.vcenter()[0] - self[u].get_center()[0] > 0.5:
                     self.edges[(u, u)].rotate(-1 * pi, axis=[0, 0, 1])
->>>>>>> Stashed changes
 
         for (u, v), edge in self.edges.items():
             try:
@@ -404,5 +395,9 @@ class FiniteAutomaton(DiGraph):
 
         return Succession(
             ApplyReverseWave(self.edges[(start, end)], direction=wiggle_vector, color=self.visual_config["theory"]["transition_color"]),
-            Indicate(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"])
+            Indicate(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"]),
+            FadeToColor(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"]),
+            FadeToColor(self.vertices[start]["base"], color=self.visual_config["theory"]["initial_state_color"]),
+            FadeToColor(self.vertices[start]["base"].submobjects[0], self.visual_config["graph"]["vertex"]["label"]["color"]),
+            FadeToColor(self.vertices[end]["base"].submobjects[0], self.visual_config["graph"]["vertex"]["label"]["color"])
         )

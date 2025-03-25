@@ -1,0 +1,4 @@
+LINK "./pastel_config.toml"
+LOAD "./fa_vault/sample_dfa.json" AS sample
+SHOW dfa OF sample
+

@@ -1,7 +1,9 @@
 # Standard Library
 import json
 import tomllib
+import os
 from typing import Callable
+from pathlib import Path
 
 # Dependencies
 from automata.base.automaton import Automaton, AutomatonStateT
@@ -22,6 +24,9 @@ from numpy.typing import NDArray
 from finite_automaton import FiniteAutomaton
 from text_visuals import ProcessText, TuringTape
 from transition_table import TransitionTable
+
+
+dir_path = Path(os.path.dirname(os.path.realpath(__file__)))
 
 
 class Auto_Manager:
@@ -58,7 +63,7 @@ class Auto_Manager:
         self.mobj[anchor_key].next_to(self.mobj[anchor_key], direction)
 
 
-class DFA_Manager:
+class DFA_Manager(Auto_Manager):
     def __init__(
         self,
         config: dict
@@ -168,7 +173,8 @@ class DFA_Manager:
         allow_partial = json_object.get("allow_partial", False)
 
         # Config stuff
-        with open("default_config.toml", "rb") as f:
+        default_config_path = dir_path / "default_config.toml"
+        with default_config_path.open("rb") as f:
             default_config = tomllib.load(f)
 
         config = {**default_config, **config}
@@ -220,7 +226,8 @@ class DFA_Manager:
         On success, returns None. On failure, throws.
         """
         # Validate json format using jsonschema library
-        with open("./schema/dfa.schema.json", "rb") as f:
+        schema_file = dir_path / "schema" / "dfa.schema.json"
+        with schema_file.open("rb") as f:
             schema = json.load(f)
         validate(
             instance=json_object,
@@ -443,7 +450,8 @@ class TM_Manager(Auto_Manager):
         On success, returns None. On failure, throws.
         """
         # Validate json format using jsonschema library
-        with open("./schema/tm.schema.json", "rb") as f:
+        schema_file = dir_path / "schema" / "tm.schema.json"
+        with schema_file.open("rb") as f:
             schema = json.load(f)
         validate(
             instance=json_object,

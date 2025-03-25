@@ -1,13 +1,14 @@
-from fa_manager import Auto_Manager, DFA_Manager, NFA_Manager, TM_Manager
 import json
 import sys
 import os
-
+import tomllib
 from pathlib import Path
 
 from manim.scene.scene import Scene
 from manim._config import tempconfig
 from manim.animation.creation import Create
+
+from fa_manager import Auto_Manager, DFA_Manager, NFA_Manager, TM_Manager
 
 # NOTE: This shouldn't run ridiculously slow, but a potential speedup
 #   I see is running each LOAD instruction concurrently.
@@ -18,7 +19,7 @@ class OutputScene(Scene):
         super().__init__()
         self.animations = list()
         self.showing = showing
-        self.managers = dict()  # Format {"name": {"manager": FA_Manager, "show": bool}}
+        self.managers = dict()  # Format {"name": Auto_Manager}
 
     def construct(self):
         if len(self.animations) > 0:
@@ -58,14 +59,17 @@ def read_file(pathobj, env):
             raise SyntaxError(f"Line {i}:\n\t{str(e)}")
 
 
-def load_from_file(pathobj, varname, scene):
+def load_from_file(pathobj, varname, scene, config_file):
     with pathobj.open() as f:
         rawJson = json.loads(f.read())
+
+    with config_file.open('rb') as f:
+        config = tomllib.load(f)
 
     os.chdir("..")
     match rawJson["fa_type"].lower():
         case "dfa":
-            created = DFA_Manager.from_json(rawJson)
+            created = DFA_Manager.from_json(rawJson, config)
         case "nfa":
             created = NFA_Manager.from_json(rawJson)
         case "tm":
@@ -80,6 +84,7 @@ def load_from_file(pathobj, varname, scene):
 
 def triageLine(line, scene):
     tokens = line.strip().split(" ")
+    config_path = Path("./default_config.toml")
 
     if line.startswith("# "):
         # It's a comment
@@ -91,12 +96,10 @@ def triageLine(line, scene):
 
         # Theoretically this should allow for spaces in the filename
         filename = capture_quotes(tokens[1:-2])
-
         pathobj = Path(filename)
-
         varname = tokens[-1]
+        load_from_file(pathobj, varname, scene, config_path)
 
-        load_from_file(pathobj, varname, scene)
     elif line.startswith("SHOW "):
         # SHOW <component> OF <varname>
         if len(tokens) != 4:
@@ -163,6 +166,11 @@ def triageLine(line, scene):
 
         for manager in scene.managers.values():
             scene.animations.append(manager.animate())
+    elif line.startswith("LINK "):
+        # LINK <config_filename>
+        filename = capture_quotes(tokens[1:], ' ')
+
+        config_path = Path(filename)
 
 
 def interpret(filename: str) -> None:
@@ -184,7 +192,7 @@ if __name__ == "__main__":
     elif len(sys.argv) == 2:
         infile = Path(sys.argv[1])
     else:
-        print("Usage: interpreter.py [infile]")
+        print("Usage: py interpreter.py [infile]")
         infile = ""
         exit(1)
 

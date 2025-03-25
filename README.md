@@ -11,6 +11,18 @@ We would like to express our sincere gratitute to the maintainers of these libra
 ### Licensing
 Both Manim and Automata are licensed under the MIT License. Graphviz is licensed under the 3-Clause BSD license. The licenses can be found in full in LICENSE.txt. These libraries are both considered dependencies, and almost none of the code is copied. The exception is the Dockerfile from Manim, which we have adopted as our own Dockerfile (with the only addition being the installation of Automata). This library is licensed under the GPL 3, but for redundancy we are also including the MIT License.
 
+## Members
+Primary Developer: CDT Sebastian Neumann
+Secondary Developer: CDT Zoe Bennett-Manke
+Tertiary Developer: CDT Ian Njuguna
+Quatiary Developer: CDT Lilly Baker
+## Instructors/Advisors
+Instructor and primary advisor: Dr. Ryan Dougherty
+Senior advisor: Dr. Edward Sobiesk
+
+Advisor: Dr. Tim Randolph
+Program Director: Colonel Robert Harrison
+
 # Installation
 ## Docker
 This will be (once implemented) the preferred way to install and use this library. We will use the most up-to-date Dockerfile provided by Manim and compose that with a Dockerfile that simply does `pip install automata-lib` on top of that. 

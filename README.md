@@ -13,14 +13,20 @@ Both Manim and Automata are licensed under the MIT License. Graphviz is licensed
 
 ## Members
 Primary Developer: CDT Sebastian Neumann
+
 Secondary Developer: CDT Zoe Bennett-Manke
+
 Tertiary Developer: CDT Ian Njuguna
+
 Quatiary Developer: CDT Lilly Baker
+
 ## Instructors/Advisors
 Instructor and primary advisor: Dr. Ryan Dougherty
+
 Senior advisor: Dr. Edward Sobiesk
 
 Advisor: Dr. Tim Randolph
+
 Program Director: Colonel Robert Harrison
 
 # Installation

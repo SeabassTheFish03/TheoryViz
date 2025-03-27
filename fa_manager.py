@@ -60,7 +60,12 @@ class Auto_Manager:
         return self
 
     def next_to_mobj(self, moved_key: str, anchor_key: str, direction: NDArray):
-        self.mobj[anchor_key].next_to(self.mobj[anchor_key], direction)
+        self.mobj[moved_key].next_to(self.mobj[anchor_key], direction)
+        return self
+
+    def scale_mobj(self, key: str, size: float):
+        self.mobj[key].scale(size)
+        return self
 
 
 class DFA_Manager(Auto_Manager):

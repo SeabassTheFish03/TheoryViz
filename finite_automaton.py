@@ -12,7 +12,6 @@ import numpy as np
 
 # Manim
 from manim.animation.transform import FadeToColor
-from manim.animation.indication import Indicate
 from manim.animation.composition import Succession
 from manim.animation.movement import MoveAlongPath
 from manim.mobject.graph import DiGraph
@@ -395,7 +394,6 @@ class FiniteAutomaton(DiGraph):
 
         return Succession(
             ApplyReverseWave(self.edges[(start, end)], direction=wiggle_vector, color=self.visual_config["theory"]["transition_color"]),
-            Indicate(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"]),
             FadeToColor(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"]),
             FadeToColor(self.vertices[start]["base"], color=self.visual_config["theory"]["initial_state_color"]),
             FadeToColor(self.vertices[start]["base"].submobjects[0], self.visual_config["graph"]["vertex"]["label"]["color"]),

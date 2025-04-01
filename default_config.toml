@@ -47,3 +47,6 @@ font_size = 30
 [table]
 border_color = "white"
 scale = 0.7
+
+[program]
+debug_mode = true

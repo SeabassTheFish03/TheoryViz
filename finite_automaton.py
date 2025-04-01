@@ -6,6 +6,7 @@ __all__ = {
 # Standard Lib
 from copy import deepcopy
 from math import tau, pi
+from pathlib import Path
 
 # Dependencies
 import numpy as np
@@ -127,6 +128,9 @@ class FiniteAutomaton(DiGraph):
         _vertex_config: dict = visual_config["graph"]["vertex"]
         _vertex_labels: dict = dict()
         _flags: dict = dict()
+
+        # Ensure TeX folder is created
+        Path("media/Tex").mkdir(parents=True, exist_ok=True)
 
         # Must handle labels and flags
         if "vertices" in options:
@@ -398,4 +402,4 @@ class FiniteAutomaton(DiGraph):
             FadeToColor(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"]),
             FadeToColor(self.vertices[start]["base"].submobjects[0], self.visual_config["graph"]["vertex"]["label"]["color"]),
             FadeToColor(self.vertices[end]["base"].submobjects[0], self.visual_config["graph"]["vertex"]["label"]["color"])
-)
+        )

@@ -23,7 +23,7 @@ class OutputScene(Scene):
 
     def construct(self):
         if len(self.animations) > 0:
-            self.play(Create(*[manager.mobj for manager in self.managers.values()]))
+            self.play(*[Create(manager.mobj) for manager in self.managers.values()])
             for anim in self.animations:
                 self.play(anim)
         else:

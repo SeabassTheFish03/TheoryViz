@@ -14,7 +14,6 @@ from automata.tm.tape import TMTape
 
 from manim.mobject.types.vectorized_mobject import VDict, VGroup
 from manim.animation.composition import Succession, AnimationGroup
-from manim.constants import UP, RIGHT
 
 from jsonschema import validate
 
@@ -481,9 +480,9 @@ class TM_Manager(Auto_Manager):
                     raise ValueError(f"Direction {changes[2]} not R or L")
 
             if json_object["initial_state"] not in json_object["states"]:
-                raise AttributeError(f"Bad initial state {json_object["initial_state"]}")
-            if json_object["blank_symbol"] not in json_object["tape_symbols"]:
-                raise AttributeError(f"Bad blank symbol {json_object["blank_symbol"]}")
+                raise AttributeError(f"Bad initial state {json_object['initial_state']}")
+            if json_object["blank_symbol"] not in json_object['tape_symbols']:
+                raise AttributeError(f"Bad blank symbol {json_object['blank_symbol']}")
             for final in json_object["final_states"]:
                 if final not in json_object["states"]:
                     raise AttributeError(f"Final state {final} not found")

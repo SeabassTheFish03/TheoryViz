@@ -26,6 +26,7 @@ class SceneToShow(Scene):
 
     def construct(self):
         self.camera.background_color = self.config["scene"]["background_color"]
+        self.fa.show_mobj("dfa")
         self.add(self.fa.mobj)
 
 

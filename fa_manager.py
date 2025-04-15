@@ -11,6 +11,7 @@ from automata.fa.dfa import DFA, DFAStateT
 from automata.tm.dtm import DTM
 from automata.tm.configuration import TMConfiguration
 from automata.tm.tape import TMTape
+from automata.fa.nfa import NFA, NFAStateT
 
 from manim.mobject.types.vectorized_mobject import VDict, VGroup
 from manim.animation.composition import Succession, AnimationGroup
@@ -283,8 +284,66 @@ class DFA_Manager(Auto_Manager):
         return Succession(*sequence)
 
 
-class NFA_Manager(Auto_Manager):
-    pass
+class NFA_Manager(DFA_Manager):
+    #TODO change validation criteria
+    def __init__(
+        self,
+        config: dict
+    ) -> None:
+        self.auto: NFA = None
+        self.mobj: VDict = VDict({
+            "nfa": VGroup(),
+            "text": VGroup(),
+            "table": VGroup()
+        })
+        self.input_string: str = ""
+        self.config: dict = config
+
+        self.how_to_show: dict[str, Callable] = {
+            "nfa": self._show_graph_render,
+            "text": self._show_process_text,
+            "table": self._show_transition_table
+        }
+        self.showing: dict[str, bool] = {
+            "nfa": False,
+            "text": False,
+            "table": False
+        }
+
+        self.states: list[str] = []
+        self.symbols: list[str] = []
+
+        self.current_state:NFAStateT = None
+        self.char_ptr: int = None
+
+
+    @classmethod
+    def validate_json(cls, json_object: dict) -> None:
+        """
+        Ensures the json fed to the from_json() function conforms to all the
+        requirements of a NFA
+
+        On success, returns None. On failure, throws.
+        """
+        # Validate json format using jsonschema library
+        schema_file = dir_path / "schema" / "nfa.schema.json"
+        with schema_file.open("rb") as f:
+            schema = json.load(f)
+        validate(
+            instance=json_object,
+            schema=schema
+        )
+
+        # Validate the transitions - not being unique???
+        allow_partial = json_object.get("allow_partial", True) #changed from DFA
+        for state in json_object["states"]:
+            if state not in json_object["transitions"]:
+                raise AttributeError(f"State {state} not listed in transition table")
+            for symbol in json_object["input_symbols"]:
+                if (symbol not in json_object["transitions"][state]) and (not allow_partial):
+                    raise AttributeError(f"Transition using \"{symbol}\" missing from state {state}")
+                if (end := json_object["transitions"][state][symbol]) not in json_object["states"]:
+                    raise AttributeError(f"Destination {end} not in states list")
 
 
 class PDA_Manager(Auto_Manager):
@@ -481,7 +540,7 @@ class TM_Manager(Auto_Manager):
 
             if json_object["initial_state"] not in json_object["states"]:
                 raise AttributeError(f"Bad initial state {json_object['initial_state']}")
-            if json_object["blank_symbol"] not in json_object['tape_symbols']:
+            if json_object["blank_symbol"] not in json_object["tape_symbols"]:
                 raise AttributeError(f"Bad blank symbol {json_object['blank_symbol']}")
             for final in json_object["final_states"]:
                 if final not in json_object["states"]:

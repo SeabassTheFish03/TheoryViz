@@ -25,5 +25,8 @@ In various parts throughout the code, we use some terms to refer to the geometry
 # Run the Code
 
 Users: cd .\team-repo-16-computing-visualizations\
-Users: py display.py <fa_filename> <config_filename> <input_string>
+To display an image: py display.py <fa_filename> <config_filename> <input_string>
+To animate an image: py animate.py <fa_filename> <config_filename> <input_string>
+
+Run the DSL: py interpreter.py <dsl_file.viz>
 

@@ -7,7 +7,7 @@ from manim._config import tempconfig
 from manim.scene.scene import Scene
 from manim.animation.creation import Create
 from manim.constants import UP, RIGHT
-from fa_manager import DFA_Manager, TM_Manager, NFA_Manager
+from fa_manager import DFA_Manager, TM_Manager
 
 # where your JSON files live
 test_dir = os.path.join(os.getcwd(), "fa_vault", "testing")
@@ -57,7 +57,6 @@ class SceneToShow(Scene):
             self.fa.show_tape()
             self.fa.scale_mobject("tm", 0.7)
             self.fa.next_to_mobject("tape", "tm", UP)
-        #TODO - insert NFA into eventual testing
 
     def construct(self):
         self.camera.background_color = self.config["scene"]["background_color"]
@@ -162,7 +161,7 @@ def run_qualitative_tests(test_cases):
         with tempconfig({"quality": "medium_quality", "preview": True}):
             scene = SceneToShow(fname, "default_config.toml", "a")
             scene.render()
-        input("Press Enter to continue...")
+        input("Press Enter to approve/disapprove...")
 
 
 def main_for_file(test_file):

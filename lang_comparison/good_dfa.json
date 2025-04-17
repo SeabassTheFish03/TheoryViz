@@ -2,7 +2,7 @@
 	"define": [
 		{
 			"filename": "fa_vault/sample_dfa.json",
-			"env_name": "thing",
+			"env_name": "good_dfa",
 			"starting_pos": {
 				"x": 0,
 				"y": 0
@@ -12,34 +12,35 @@
 	"commands": [
 		{
 			"verb": "input",
-			"object": "thing",
+			"object": "good_dfa",
 			"predicate": "abac"
 		},
 		{
 			"verb": "show",
-			"object": "thing",
+			"object": "good_dfa",
 			"predicate": "dfa"
 		},
 		{
 			"verb": "show",
-			"object": "thing",
+			"object": "good_dfa",
 			"predicate": "table"
 		},
 		{
 			"verb": "move",
-			"object": "thing",
+			"object": "good_dfa",
 			"predicate": {
 				"component": "dfa",
-				"x": 3,
+				"x": -3,
 				"y": 0,
 				"z": 0
 			}
 		},
 		{
 			"verb": "shift",
-			"object": "thing",
+			"object": "good_dfa",
 			"predicate": {
-				"x": -3,
+				"component": "table",
+				"x": 3,
 				"y": 0,
 				"z": 0
 			}
@@ -47,6 +48,6 @@
 		{
 			"verb": "print",
 			"object": "Good copy!"
-		},
+		}
 	]
 }

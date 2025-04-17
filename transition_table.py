@@ -7,6 +7,9 @@ class TransitionTable(Table):
         """
         Given an automaton of type DFA or TM, constructs a mobject displaying the transition table of that automaton. Also provides helpful methods for animation.
         """
+
+        #TODO: NFA separate table?
+
         self.config = visual_config
 
         self.symbols = list(automaton.input_symbols)

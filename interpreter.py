@@ -71,7 +71,7 @@ def load_from_file(pathobj, varname, scene, config_file):
         case "dfa":
             created = DFA_Manager.from_json(rawJson, config)
         case "nfa":
-            created = NFA_Manager.from_json(rawJson)
+            created = NFA_Manager.from_json(rawJson) #TODO: config???
         case "tm":
             created = TM_Manager.from_json(rawJson)
         case _:

@@ -1,0 +1,15 @@
+[ledger]
+# Number of steps visible on screen at once
+max_steps = 2
+
+# Speed of animation in seconds (lower = faster)
+speed = 1.0
+
+# Size or scale of the whole ledger visualization
+size = 1.0
+
+# Speed of fading in seconds (lower = faster)
+fade_speed = 1.0
+
+# Spacing between steps (rows)
+spacing = 1.2

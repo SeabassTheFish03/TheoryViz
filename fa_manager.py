@@ -285,7 +285,7 @@ class DFA_Manager(Auto_Manager):
 
 
 class NFA_Manager(DFA_Manager):
-    #TODO change validation criteria
+    # TODO change validation criteria
     def __init__(
         self,
         config: dict
@@ -313,9 +313,8 @@ class NFA_Manager(DFA_Manager):
         self.states: list[str] = []
         self.symbols: list[str] = []
 
-        self.current_state:NFAStateT = None
+        self.current_state: NFAStateT = None
         self.char_ptr: int = None
-
 
     @classmethod
     def validate_json(cls, json_object: dict) -> None:
@@ -335,7 +334,7 @@ class NFA_Manager(DFA_Manager):
         )
 
         # Validate the transitions - not being unique???
-        allow_partial = json_object.get("allow_partial", True) #changed from DFA
+        allow_partial = json_object.get("allow_partial", True)  # changed from DFA
         for state in json_object["states"]:
             if state not in json_object["transitions"]:
                 raise AttributeError(f"State {state} not listed in transition table")
@@ -454,7 +453,7 @@ class TM_Manager(Auto_Manager):
             self.auto,
             self.config["table"],
             highlight_color=self.config["theory"]["current_state_color"],
-            starting_symbol=self.input_string[0]
+            starting_symbol=self.tape.tape[0]
         )
 
         self.mobj["table"] = mobj

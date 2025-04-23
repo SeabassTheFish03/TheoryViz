@@ -31,19 +31,17 @@ class SceneToShow(Scene):
             self.fa.next_to_mobj("text", "dfa", UP)
         elif fa_json["fa_type"] == "tm":
             self.fa = TM_Manager.from_json(fa_json, config=self.config, input_string=input_string)
-            self.fa.show_graph_render()
-            self.fa.show_tape()
-
-            self.fa.scale_mobject("tm", 0.7)
-            self.fa.next_to_mobject("tape", "tm", UP)
-
+            self.fa.show_mobj("tm")
+            self.fa.show_mobj("tape")
+            self.fa.scale_mobj("tm", 0.7)
+            self.fa.next_to_mobj("tape", "tm", UP)
         elif fa_json["fa_type"] == "nfa":
             self.fa = NFA_Manager.from_json(fa_json, config=self.config, input_string=input_string)
             self.fa.show_mobj("nfa")
             self.fa.show_mobj("text")
             self.fa.scale_mobj("nfa", 0.7)
             self.fa.next_to_mobj("text", "nfa", UP)
-        #TODO: update NFAs into animation process - transition tables?
+        # TODO: update NFAs into animation process - transition tables?
 
     def construct(self):
         self.camera.background_color = self.config["scene"]["background_color"]

@@ -236,14 +236,14 @@ class FiniteAutomaton(DiGraph):
         edge_config: dict,
         labels: dict[(str, str), str]
     ) -> None:
-        self.edges = dict() #dictionary with start edge and ending edges
+        self.edges = dict()  # dictionary with start edge and ending edges
         general_edge_config = {k: v for k, v in edge_config.items() if isinstance(k, str)}
         specific_edge_config = {k: v for k, v in edge_config.items() if isinstance(k, tuple)}
 
-        for (u, v) in edges: #.items()
-            #check if v is a set.... wrap it in the set command
+        for (u, v) in edges:  # .items()
+            # check if v is a set.... wrap it in the set command
             # print(v)
-            result = isinstance(v, tuple) #NFA - has tuples as it's values for the edges, need to separate them
+            result = isinstance(v, tuple)  # NFA - has tuples as it's values for the edges, need to separate them
             if result:
                 # print("Argh\n")
                 for bv in v:
@@ -265,14 +265,14 @@ class FiniteAutomaton(DiGraph):
 
                         # An empty label is different from one that doesn't exist
                         if edge_label == "":
-                            edge_label = "\\epsilon" #TODO: does using epsilon count???
+                            edge_label = "\\epsilon"  # TODO: does using epsilon count???
 
-                        #print("type = ", self[v])
+                        # print("type = ", self[v])
 
                         self.edges[(u, bv)] = LabeledLine(
                             label=edge_label,
                             start=self[u],
-                            end=self[bv], #this is the problem with multiple transitions rn - must update to loop through all the options for the end of the vertices
+                            end=self[bv],  # this is the problem with multiple transitions rn - must update to loop through all the options for the end of the vertices
                             color=this_edge_config["color"],
                             label_position=this_edge_config["label"]["label_position"],
                             label_config=this_edge_config["label"]["label"],
@@ -312,14 +312,14 @@ class FiniteAutomaton(DiGraph):
 
                     # An empty label is different from one that doesn't exist
                     if edge_label == "":
-                        edge_label = "\\epsilon" #TODO: does using epsilon count???
+                        edge_label = "\\epsilon"  # TODO: does using epsilon count???
 
-                    #print("type = ", self[v])
+                    # print("type = ", self[v])
 
                     self.edges[(u, v)] = LabeledLine(
                         label=edge_label,
                         start=self[u],
-                        end=self[v], #this is the problem with multiple transitions rn - must update to loop through all the options for the end of the vertices
+                        end=self[v],  # this is the problem with multiple transitions rn - must update to loop through all the options for the end of the vertices
                         color=this_edge_config["color"],
                         label_position=this_edge_config["label"]["label_position"],
                         label_config=this_edge_config["label"]["label"],
@@ -344,11 +344,10 @@ class FiniteAutomaton(DiGraph):
             try:
                 if isinstance(edge, LabeledLine):
                     # print("argh")
-                    #if uv in tip_config, do something. (translate it) else, do nothing
-                    if (u,v) in self._tip_config: #help...
-                        print("HELP")
-                        edge.add_tip(**self._tip_config[(u, v)])
-                
+                    # if uv in tip_config, do something. (translate it) else, do nothing
+                    # if (u, v) in self._tip_config:
+                    #     print("HELP")
+                    edge.add_tip(**self._tip_config[(u, v)])
             except TypeError:
                 print("Unexpected tip type!")
                 print(self._tip_config)

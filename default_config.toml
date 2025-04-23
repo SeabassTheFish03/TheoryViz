@@ -7,8 +7,8 @@ layout = "circular"
 
 [graph.vertex]
 radius = 0.3
-color = "black"
-stroke_color = "black"
+color = "white"
+stroke_color = "white"
 
 [graph.vertex.label]
 color = "black"
@@ -37,10 +37,10 @@ show_final_state_annulus = true
 initial_state_color = "white"
 final_state_color = "white"
 current_state_color = "yellow"
-transition_color = "purple"
+transition_color = "yellow"
 
 [text]
-color = "black"
+color = "white"
 shadow_color = "gray"
 font_size = 30
 
@@ -51,26 +51,26 @@ scale = 0.7
 [program]
 debug_mode = true
 
-[ledger]
-#scene                   Sets background color       
-max_steps = 3
-speed = 1.0
-size = 1.0
-fade_speed = 1.0
-spacing = 1.2
-arrow_color = "white"
+# [ledger]
+# #scene                   Sets background color       
+# max_steps = 3
+# speed = 1.0
+# size = 1.0
+# fade_speed = 1.0
+# spacing = 1.2
+# arrow_color = "white"
 
-[ledger.past]
-font_size = 30
-text_color = "black"
-circle_color = "blue"
-
-[ledger.symbol]
-font_size = 30
-text_color = "black"
-box_color = "yellow"
-
-[ledger.next]
-font_size = 30
-text_color = "black"
-circle_color = "purple"
+# [ledger.past]
+# font_size = 30
+# text_color = "black"
+# circle_color = "blue"
+#
+# [ledger.symbol]
+# font_size = 30
+# text_color = "black"
+# box_color = "yellow"
+#
+# [ledger.next]
+# font_size = 30
+# text_color = "black"
+# circle_color = "purple"

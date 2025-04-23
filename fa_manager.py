@@ -346,7 +346,7 @@ class NFA_Manager(DFA_Manager):
         if self.auto is None:
             raise Exception("No automaton available to construct a view of")
 
-        edges_with_options: dict = self._json_to_mobj_edges(self.auto.transitions) #putting them into a dictionary
+        edges_with_options: dict = self._json_to_mobj_edges(self.auto.transitions)  # putting them into a dictionary
 
         mobj_options = {
             "vertices": {
@@ -363,21 +363,21 @@ class NFA_Manager(DFA_Manager):
         for state in self.auto.final_states:
             mobj_options["vertices"][state]["flags"].append("f")
 
-#change this
+# change this
         # print(self.auto.transitions) #but the transitions are now in a frozendict...cannot edit them in here.
-        #so finite_automaton is running into problems. It doesn't like that the transitions are not together.
-        #does automata lib (auto) take the lists or the single things - although there might be an issue
-        #in reading the lists. might just have to change finite_automaton to reflect this and adjust with it
-        #dig further into auto documentation, specifically for NFAs
-        #either need to edit up higher to make transitions separate or edit in finite_automatons
+        # so finite_automaton is running into problems. It doesn't like that the transitions are not together.
+        # does automata lib (auto) take the lists or the single things - although there might be an issue
+        # in reading the lists. might just have to change finite_automaton to reflect this and adjust with it
+        # dig further into auto documentation, specifically for NFAs
+        # either need to edit up higher to make transitions separate or edit in finite_automatons
 
         self.mobj["nfa"] = FiniteAutomaton(
             vertices=self.auto.states,
-            edges=self._json_to_mobj_edges(self.auto.transitions), #might need to update
+            edges=self._json_to_mobj_edges(self.auto.transitions),  # might need to update
             visual_config=self.config,
-            options=mobj_options #this one
+            options=mobj_options  # this one
         )
-        #finite_automaton.py line 267, _repopulate_edge_dict + line 194 __init__
+        # finite_automaton.py line 267, _repopulate_edge_dict + line 194 __init__
 
         self.showing["nfa"] = True
 
@@ -414,8 +414,8 @@ class NFA_Manager(DFA_Manager):
             input_symbols=json_object["input_symbols"],
             transitions=json_object["transitions"],
             initial_state=json_object["initial_state"],
-            final_states=set(json_object["final_states"])#,
-            #allow_partial=allow_partial
+            final_states=set(json_object["final_states"])  # ,
+            # allow_partial=allow_partial
         )
 
         out = cls(config)
@@ -470,23 +470,23 @@ class NFA_Manager(DFA_Manager):
         for state in json_object["states"]:
             if state not in json_object["transitions"]:
                 raise AttributeError(f"State {state} not listed in transition table")
-            for symbol in json_object["input_symbols"]: #getting input symbols...
+            for symbol in json_object["input_symbols"]:  # getting input symbols...
                 if (symbol not in json_object["transitions"][state]) and (not allow_partial):
                     raise AttributeError(f"Transition using \"{symbol}\" missing from state {state}")
-                
+
                 for transitionState in (end := json_object["transitions"][state][symbol]):
                     if transitionState not in json_object["states"]:
                         raise AttributeError(f"Destination {transitionState} not in states list")
 
                 # I think this is working to validate the definition, now to change all the other stuff for dfas
 
-                #if (end := json_object["transitions"][state][symbol]) not in json_object["states"]: #change this... "Destination ['1','2'] not in states list"
+                # if (end := json_object["transitions"][state][symbol]) not in json_object["states"]: #change this... "Destination ['1','2'] not in states list"
                 #    raise AttributeError(f"Destination {end} not in states list")
 
-                #for state in json_object["transitions"][state][symbol]: #getting states that transitions go to
+                # for state in json_object["transitions"][state][symbol]: #getting states that transitions go to
                 #    if (symbol not in state)
-                #if (end := json_object["transitions"][state][symbol]) 
-                #if (end := json_object["transitions"][state][symbol]) not in json_object["states"]: #change this... "Destination ['1','2'] not in states list"
+                # if (end := json_object["transitions"][state][symbol])
+                # if (end := json_object["transitions"][state][symbol]) not in json_object["states"]: #change this... "Destination ['1','2'] not in states list"
                 #    raise AttributeError(f"Destination {end} not in states list")
 
     def animate(self) -> Succession:
@@ -522,7 +522,7 @@ class NFA_Manager(DFA_Manager):
 
         return Succession(*sequence)
 
-        #need to do stuff with this animation
+        # need to do stuff with this animation
 
 
 class PDA_Manager(Auto_Manager):
@@ -679,7 +679,7 @@ class TM_Manager(Auto_Manager):
         out.add_automaton(auto)
 
         if len(input_string) > 0:
-            out.add_input_string(input_string)
+            out.add_input(input_string)
 
         return out
 

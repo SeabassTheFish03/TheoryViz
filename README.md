@@ -44,4 +44,8 @@ In various parts throughout the code, we use some terms to refer to the geometry
 
 Users: cd .\team-repo-16-computing-visualizations\
 Users: py display.py <fa_filename> <config_filename> <input_string>
+OR
+Users: py animate.py <fa_filename> <config_filename> <input_string>
+OR
+Users: py interpreter.py <viz_filename>
 

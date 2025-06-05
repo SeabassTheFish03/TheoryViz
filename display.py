@@ -5,7 +5,7 @@ from manim._config import tempconfig
 
 from manim.scene.scene import Scene
 
-from fa_manager import DFA_Manager, TM_Manager
+from fa_manager import DFA_Manager, TM_Manager, NFA_Manager
 
 
 class SceneToShow(Scene):
@@ -21,9 +21,12 @@ class SceneToShow(Scene):
             self.fa = DFA_Manager.from_json(fa_json, config=self.config, input_string=in_string)
         elif fa_json["fa_type"] == "tm":
             self.fa = TM_Manager.from_json(fa_json, config=self.config, input_string=in_string)
+        elif fa_json["fa_type"] == "nfa":
+            self.fa = NFA_Manager.from_json(fa_json, config=self.config, input_string=in_string)
 
     def construct(self):
         self.camera.background_color = self.config["scene"]["background_color"]
+        self.fa.show_mobj("dfa")
         self.add(self.fa.mobj)
 
 

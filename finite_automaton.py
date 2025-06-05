@@ -6,13 +6,13 @@ __all__ = {
 # Standard Lib
 from copy import deepcopy
 from math import tau, pi
+from pathlib import Path
 
 # Dependencies
 import numpy as np
 
 # Manim
 from manim.animation.transform import FadeToColor
-from manim.animation.indication import Indicate
 from manim.animation.composition import Succession
 from manim.animation.movement import MoveAlongPath
 from manim.mobject.graph import DiGraph
@@ -129,6 +129,9 @@ class FiniteAutomaton(DiGraph):
         _vertex_labels: dict = dict()
         _flags: dict = dict()
 
+        # Ensure TeX folder is created
+        Path("media/Tex").mkdir(parents=True, exist_ok=True)
+
         # Must handle labels and flags
         if "vertices" in options:
             for vertex, opts in options["vertices"].items():
@@ -233,58 +236,117 @@ class FiniteAutomaton(DiGraph):
         edge_config: dict,
         labels: dict[(str, str), str]
     ) -> None:
-        self.edges = dict()
+        self.edges = dict()  # dictionary with start edge and ending edges
         general_edge_config = {k: v for k, v in edge_config.items() if isinstance(k, str)}
         specific_edge_config = {k: v for k, v in edge_config.items() if isinstance(k, tuple)}
 
-        for (u, v) in edges:
-            if u != v:
-                this_edge_config = deepcopy(general_edge_config)
-                this_edge_config.update(specific_edge_config.get((u, v), dict()))
-                edge_label = labels.get((u, v), str((u, v)))
+        for (u, v) in edges:  # .items()
+            # check if v is a set.... wrap it in the set command
+            # print(v)
+            result = isinstance(v, tuple)  # NFA - has tuples as it's values for the edges, need to separate them
+            if result:
+                # print("Argh\n")
+                for bv in v:
+                    if u != bv:
+                        this_edge_config = deepcopy(general_edge_config)
+                        this_edge_config.update(specific_edge_config.get((u, bv), dict()))
+                        edge_label = labels.get((u, bv), str((u, bv)))
 
-                # This is a straight edge between two different vertices
-                if (v, u) in edges:
-                    # We need to offset two edges between the same vertices
-                    vec1 = self[v].get_center() - self[u].get_center()
-                    vec2 = np.cross(vec1, np.array([0, 0, 1]))
+                        # This is a straight edge between two different vertices
+                        if (bv, u) in edges:
+                            # We need to offset two edges between the same vertices
+                            vec1 = self[bv].get_center() - self[u].get_center()
+                            vec2 = np.cross(vec1, np.array([0, 0, 1]))
 
-                    length = np.linalg.norm(vec2)
-                    offset = 0.1 * vec2 / length  # TODO: Make configurable?
-                else:
-                    offset = np.array([0, 0, 0])
+                            length = np.linalg.norm(vec2)
+                            offset = 0.1 * vec2 / length  # TODO: Make configurable?
+                        else:
+                            offset = np.array([0, 0, 0])
 
-                # An empty label is different from one that doesn't exist
-                if edge_label == "":
-                    edge_label = "\\epsilon"
+                        # An empty label is different from one that doesn't exist
+                        if edge_label == "":
+                            edge_label = "\\epsilon"  # TODO: does using epsilon count???
 
-                self.edges[(u, v)] = LabeledLine(
-                    label=edge_label,
-                    start=self[u],
-                    end=self[v],
-                    color=this_edge_config["color"],
-                    label_position=this_edge_config["label"]["label_position"],
-                    label_config=this_edge_config["label"]["label"],
-                    box_config=this_edge_config["label"]["box"],
-                    frame_config=this_edge_config["label"]["frame"],
-                ).shift(offset)
+                        # print("type = ", self[v])
 
-                for label in [x for x in self.edges[(u, v)].submobjects if isinstance(x, Label)]:
-                    label.scale(this_edge_config["label"]["font_size"] / 48)
+                        self.edges[(u, bv)] = LabeledLine(
+                            label=edge_label,
+                            start=self[u],
+                            end=self[bv],  # this is the problem with multiple transitions rn - must update to loop through all the options for the end of the vertices
+                            color=this_edge_config["color"],
+                            label_position=this_edge_config["label"]["label_position"],
+                            label_config=this_edge_config["label"]["label"],
+                            box_config=this_edge_config["label"]["box"],
+                            frame_config=this_edge_config["label"]["frame"],
+                        ).shift(offset)
+
+                        for label in [x for x in self.edges[(u, bv)].submobjects if isinstance(x, Label)]:
+                            label.scale(this_edge_config["label"]["font_size"] / 48)
+                    else:
+                        edge_label = labels.get((u, u), str((u, u)))
+
+                        this_edge_config = deepcopy(general_edge_config)
+                        this_edge_config.update(specific_edge_config.get((u, u), dict()))
+
+                        self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config).rotate(angle_between(self[u].get_center(), [0, -1, 0]), axis=[0, 0, 1])
+
+                        if self.vcenter()[0] - self[u].get_center()[0] > 0.5:
+                            self.edges[(u, u)].rotate(-1 * pi, axis=[0, 0, 1])
+
             else:
-                edge_label = labels.get((u, u), str((u, u)))
+                if u != v:
+                    this_edge_config = deepcopy(general_edge_config)
+                    this_edge_config.update(specific_edge_config.get((u, v), dict()))
+                    edge_label = labels.get((u, v), str((u, v)))
 
-                this_edge_config = deepcopy(general_edge_config)
-                this_edge_config.update(specific_edge_config.get((u, u), dict()))
+                    # This is a straight edge between two different vertices
+                    if (v, u) in edges:
+                        # We need to offset two edges between the same vertices
+                        vec1 = self[v].get_center() - self[u].get_center()
+                        vec2 = np.cross(vec1, np.array([0, 0, 1]))
 
-                self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config).rotate(angle_between(self[u].get_center(), [0, -1, 0]), axis=[0, 0, 1])
+                        length = np.linalg.norm(vec2)
+                        offset = 0.1 * vec2 / length  # TODO: Make configurable?
+                    else:
+                        offset = np.array([0, 0, 0])
 
-                if self.vcenter()[0] - self[u].get_center()[0] > 0.5:
-                    self.edges[(u, u)].rotate(-1 * pi, axis=[0, 0, 1])
+                    # An empty label is different from one that doesn't exist
+                    if edge_label == "":
+                        edge_label = "\\epsilon"  # TODO: does using epsilon count???
+
+                    # print("type = ", self[v])
+
+                    self.edges[(u, v)] = LabeledLine(
+                        label=edge_label,
+                        start=self[u],
+                        end=self[v],  # this is the problem with multiple transitions rn - must update to loop through all the options for the end of the vertices
+                        color=this_edge_config["color"],
+                        label_position=this_edge_config["label"]["label_position"],
+                        label_config=this_edge_config["label"]["label"],
+                        box_config=this_edge_config["label"]["box"],
+                        frame_config=this_edge_config["label"]["frame"],
+                    ).shift(offset)
+
+                    for label in [x for x in self.edges[(u, v)].submobjects if isinstance(x, Label)]:
+                        label.scale(this_edge_config["label"]["font_size"] / 48)
+                else:
+                    edge_label = labels.get((u, u), str((u, u)))
+
+                    this_edge_config = deepcopy(general_edge_config)
+                    this_edge_config.update(specific_edge_config.get((u, u), dict()))
+
+                    self.edges[(u, u)] = LabeledCurvedArrow(label=edge_label, around=self[u], buffer=0.1, config=this_edge_config).rotate(angle_between(self[u].get_center(), [0, -1, 0]), axis=[0, 0, 1])
+
+                    if self.vcenter()[0] - self[u].get_center()[0] > 0.5:
+                        self.edges[(u, u)].rotate(-1 * pi, axis=[0, 0, 1])
 
         for (u, v), edge in self.edges.items():
             try:
                 if isinstance(edge, LabeledLine):
+                    # print("argh")
+                    # if uv in tip_config, do something. (translate it) else, do nothing
+                    # if (u, v) in self._tip_config:
+                    #     print("HELP")
                     edge.add_tip(**self._tip_config[(u, v)])
             except TypeError:
                 print("Unexpected tip type!")
@@ -395,9 +457,8 @@ class FiniteAutomaton(DiGraph):
 
         return Succession(
             ApplyReverseWave(self.edges[(start, end)], direction=wiggle_vector, color=self.visual_config["theory"]["transition_color"]),
-            Indicate(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"]),
-            FadeToColor(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"]),
             FadeToColor(self.vertices[start]["base"], color=self.visual_config["theory"]["initial_state_color"]),
+            FadeToColor(self.vertices[end]["base"], color=self.visual_config["theory"]["transition_color"]),
             FadeToColor(self.vertices[start]["base"].submobjects[0], self.visual_config["graph"]["vertex"]["label"]["color"]),
             FadeToColor(self.vertices[end]["base"].submobjects[0], self.visual_config["graph"]["vertex"]["label"]["color"])
         )

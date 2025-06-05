@@ -24,7 +24,7 @@ def run_quantitative_tests(test_cases, expected_results):
         
         if file == "automaton_no_states.json":
             results[file] = "should run but put up blank screen"
-        elif file == "dfa_15_states.json":
+        elif file == "tm_testing.json":
             if len(data.get("states", [])) == 15:
                 results[file] = "produce 15 state dfa. transitions clear and readable and nothing overlapping"
             else:
@@ -43,14 +43,15 @@ def main():
     # Expected results parsed from zexpectedresults.txt
     expected_results = {
         "automaton_no_states.json": "should run but put up blank screen",
-        "dfa_15_states.json": "produce 15 state dfa. transitions clear and readable and nothing overlapping"
+        "tm_testing.json": "produce 15 state dfa. transitions clear and readable and nothing overlapping"
     }
     
-    quantitative_results = run_quantitative_tests(["automaton_no_states.json", "dfa_15_states.json"], expected_results)
+    quantitative_results = run_quantitative_tests(
+        ["automaton_no_states.json", "tm_testing.json"], expected_results)
     for test, result in quantitative_results.items():
         print(f"{test}: {result}")
     
-    run_qualitative_tests(["dfa_15_states.json"])
+    run_qualitative_tests(["tm_testing.json"])
 
 if __name__ == "__main__":
     main()

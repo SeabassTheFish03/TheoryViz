@@ -5,4 +5,4 @@ SHOW table OF good_dfa
 MOVE dfa OF good_dfa TO -3,0,0
 SHIFT table OF good_dfa BY 3,0,0
 PRINT "Good copy"
-ANIMATE!
+ANIMATE
